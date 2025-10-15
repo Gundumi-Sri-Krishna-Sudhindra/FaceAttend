@@ -57,7 +57,6 @@ export default function WelcomeScreen() {
             const response = await getTimetableApi(parsedUser.id);
             setTimetable(response.timetable || getEmptyTimetable());
           } catch (error) {
-            console.error('Error fetching timetable:', error);
             setTimetable(getEmptyTimetable());
           }
         }
@@ -140,7 +139,6 @@ export default function WelcomeScreen() {
               if (user) {
                 await updateTimetableApi(user.id, timetableData);
                 setTimetable(timetableData);
-                console.log('Timetable saved successfully');
               }
               setShowTimetableSetup(false);
               setShowTimetableView(true);
@@ -176,31 +174,25 @@ export default function WelcomeScreen() {
             setErrorMessage(null);
           }}
           onTakeAttendance={(hours) => {
-            console.log('Take Attendance pressed for hours:', hours);
             // The HourSelectModal will handle navigation to camera
           }}
           onTimetablePress={async () => {
             try {
               if (user) {
-                console.log('Fetching timetable for user:', user.id);
                 const response = await getTimetableApi(user.id);
-                console.log('Timetable API response:', response);
                 const timetableData = response.timetable || getEmptyTimetable();
-                console.log('Setting timetable data:', timetableData);
                 setTimetable(timetableData);
                 setShowTimetableView(true);
               }
             } catch (error) {
-              console.error('Failed to load timetable:', error);
               // Set empty timetable and show timetable view (will show empty state)
               const emptyData = getEmptyTimetable();
-              console.log('Setting empty timetable data:', emptyData);
               setTimetable(emptyData);
               setShowTimetableView(true);
             }
           }}
           onViewReports={() => {
-            console.log('View Reports pressed');
+            // console.log('View Reports pressed');
           }}
         />
       </SafeAreaView>
@@ -254,7 +246,6 @@ export default function WelcomeScreen() {
                       await AsyncStorage.setItem('token', token);
                       // Store password for kiosk mode
                       await setStoredPassword(password);
-                      console.log('Registered and logged in:', user.username, token.substring(0, 12) + '...');
                       setUser(user);
                       setIsLoggedIn(true);
                     } catch (err: any) {
@@ -280,7 +271,6 @@ export default function WelcomeScreen() {
                       await AsyncStorage.setItem('token', token);
                       // Store password for kiosk mode
                       await setStoredPassword(password);
-                      console.log('Logged in:', user.username, token.substring(0, 12) + '...');
                       setUser(user);
                       setIsLoggedIn(true);
                     } catch (err: any) {

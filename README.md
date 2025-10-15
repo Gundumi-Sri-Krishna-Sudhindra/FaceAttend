@@ -17,7 +17,8 @@ FaceAttend is a comprehensive attendance management system that uses advanced fa
 - **Cross-platform Mobile App**: Built with React Native/Expo for iOS and Android
 - **RESTful API**: Node.js/Express backend with MongoDB database
 - **JWT Authentication**: Secure authentication with JSON Web Tokens
-- **Face Recognition Engine**: Uses @vladmandic/human library with TensorFlow.js for accurate face detection
+- **FaceNet Recognition**: High-accuracy face recognition using Python microservice with FaceNet embeddings
+- **Hybrid Architecture**: Python FaceNet service + Node.js backend for optimal performance
 - **Real-time Updates**: Live attendance statistics and student recognition feedback
 - **Offline Support**: Local storage for user sessions and offline functionality
 - **Responsive Design**: Modern UI with smooth animations and intuitive user experience
@@ -56,9 +57,18 @@ server/
 │   │   └── Faculty.ts
 │   ├── routes/          # API routes
 │   ├── services/        # Business logic
-│   │   └── human.ts     # Face recognition service
+│   │   ├── human.ts     # Legacy face recognition service
+│   │   └── facenet.service.ts # FaceNet service bridge
 │   ├── middleware/     # Authentication & validation
 │   └── config/         # Database & environment config
+```
+
+### FaceNet Microservice (Python/Flask)
+```
+facenet_service/
+├── face_recognition_service.py  # Flask API for face recognition
+├── requirements.txt             # Python dependencies
+└── README.md                   # Service documentation
 ```
 
 ## 🛠️ Technology Stack
@@ -79,10 +89,19 @@ server/
 - **MongoDB** with Mongoose ODM
 - **JWT** for authentication
 - **bcryptjs** for password hashing
-- **@vladmandic/human** for server-side face processing
+- **axios** for HTTP requests to FaceNet service
+- **form-data** for multipart form data
 - **Canvas** for image processing
 - **CORS** for cross-origin requests
 - **Helmet** for security headers
+
+### FaceNet Recognition Service (Python)
+- **Python 3.8+** with Flask framework
+- **FaceNet PyTorch** for face recognition
+- **MTCNN** for face detection
+- **PIL/Pillow** for image processing
+- **NumPy** for numerical operations
+- **OpenCV** for computer vision tasks
 
 ### Development Tools
 - **ESLint** for code linting
@@ -95,34 +114,64 @@ server/
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm or yarn
+- Python 3.8+ with pip
 - MongoDB (local or cloud instance)
 - Expo CLI (`npm install -g @expo/cli`)
 - Android Studio (for Android development)
 - Xcode (for iOS development, macOS only)
 
-### Backend Setup
+### Quick Start (All Services)
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd Face-Attend/server
+   cd FaceAttend
    ```
 
-2. **Install dependencies**
+2. **Start all services with one command**
    ```bash
+   ./start-services.sh
+   ```
+
+This script will:
+- Start the Python FaceNet service on port 5001
+- Start the Node.js backend on port 3000
+- Start the React Native client on port 8081
+
+### Manual Setup
+
+#### FaceNet Service Setup
+
+1. **Install Python dependencies**
+   ```bash
+   cd facenet_service
+   pip install -r requirements.txt
+   ```
+
+2. **Start FaceNet service**
+   ```bash
+   python face_recognition_service.py
+   ```
+
+#### Backend Setup
+
+1. **Install Node.js dependencies**
+   ```bash
+   cd server
    npm install
    ```
 
-3. **Environment Configuration**
+2. **Environment Configuration**
    Create a `.env` file in the server directory:
    ```env
-   PORT=4000
+   PORT=3000
    MONGODB_URI=mongodb://127.0.0.1:27017/face-attend
    JWT_SECRET=your-super-secret-jwt-key
    JWT_EXPIRES_IN=7d
+   FACENET_SERVICE_URL=http://localhost:5001
    ```
 
-4. **Start the server**
+3. **Start the server**
    ```bash
    # Development mode
    npm run dev
@@ -147,7 +196,7 @@ server/
 3. **Environment Configuration**
    Create a `.env` file in the client directory:
    ```env
-   EXPO_PUBLIC_API_URL=http://localhost:4000
+   EXPO_PUBLIC_API_URL=http://localhost:3000
    ```
 
 4. **Start the development server**

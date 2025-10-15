@@ -58,7 +58,6 @@ export default function LiveAttendance({
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [lastProcessedImage, setLastProcessedImage] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   
   const cameraRef = useRef<CameraView>(null);
   const detectionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,10 +83,8 @@ export default function LiveAttendance({
 
   // Start continuous face detection
   const startFaceDetection = useCallback(() => {
-    console.log('startFaceDetection called - detectionIntervalRef:', !!detectionIntervalRef.current, 'isInitialized:', isInitialized, 'isDetecting:', isDetecting);
     
     if (detectionIntervalRef.current) {
-      console.log('Detection already running, clearing interval...');
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
       setIsDetecting(false);
@@ -95,26 +92,21 @@ export default function LiveAttendance({
     }
     
     if (!isInitialized) {
-      console.log('Camera not initialized yet');
       return;
     }
     
-    console.log('Starting face detection...');
     setIsDetecting(true);
     isDetectingRef.current = true;
     
     // Small delay to ensure state is set
     setTimeout(() => {
       detectionIntervalRef.current = setInterval(async () => {
-      console.log('Detection interval tick - isProcessing:', isProcessing, 'cameraRef:', !!cameraRef.current, 'isInitialized:', isInitialized, 'isDetecting:', isDetectingRef.current);
       
       if (isProcessing || !cameraRef.current || !isInitialized || !isDetectingRef.current) {
-        console.log('Skipping detection - conditions not met');
         return;
       }
       
       try {
-        console.log('Starting image capture...');
         setIsProcessing(true);
         
         // Capture frame
@@ -122,8 +114,6 @@ export default function LiveAttendance({
           quality: 0.7,
           base64: true,
         });
-        
-        console.log('Photo captured:', !!photo?.base64);
         
         if (!photo?.base64) {
           setIsProcessing(false);
@@ -141,28 +131,20 @@ export default function LiveAttendance({
         // Process face descriptor
         let faceDescriptor: number[] | null = null;
         try {
-          const debugMsg = `Processing image ${new Date().toLocaleTimeString()}`;
-          setDebugInfo(prev => [debugMsg, ...prev.slice(0, 4)]);
           
           faceDescriptor = await extractSingleFaceDescriptorAsync(photo.base64);
           
           if (faceDescriptor) {
-            const faceMsg = `Face detected! Descriptor length: ${faceDescriptor.length}`;
-            setDebugInfo(prev => [faceMsg, ...prev.slice(0, 4)]);
+            
           } else {
-            const noFaceMsg = `No face detected in image`;
-            setDebugInfo(prev => [noFaceMsg, ...prev.slice(0, 4)]);
+            
           }
         } catch (faceError: any) {
-          console.log('Face processing error:', faceError);
-          const errorMsg = `Face processing error: ${faceError.message}`;
-          setDebugInfo(prev => [errorMsg, ...prev.slice(0, 4)]);
           setIsProcessing(false);
           return;
         }
         
         // Since we're now using server-side processing, we'll always send the image
-        console.log('Using server-side face processing...');
         
         // Mark attendance with image data for server-side processing
         const markData: MarkAttendanceInput = {
@@ -172,7 +154,6 @@ export default function LiveAttendance({
         
         try {
             const result = await markAttendanceApi(markData);
-            console.log('Attendance marked successfully:', result);
             
             // Check if student was already marked to prevent duplicates
             const studentId = result.student.id;
@@ -210,11 +191,6 @@ export default function LiveAttendance({
               }, 1500);
             }
           } catch (apiError: any) {
-            console.log('API Error:', apiError.response?.data || apiError.message);
-            
-            // Add debug info
-            const errorMsg = `API Error: ${apiError.response?.status || 'Unknown'} - ${apiError.response?.data?.message || apiError.message}`;
-            setDebugInfo(prev => [errorMsg, ...prev.slice(0, 4)]);
             
             // Show user-friendly error message
             if (apiError.response?.status === 404) {
@@ -231,7 +207,6 @@ export default function LiveAttendance({
           }
         } catch (error: any) {
           // Silently handle errors to avoid interrupting detection
-          console.log('Face detection error:', error.message);
         } finally {
           setIsProcessing(false);
         }
@@ -241,7 +216,6 @@ export default function LiveAttendance({
 
   // Stop face detection
   const stopFaceDetection = useCallback(() => {
-    console.log('Stopping face detection...');
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
@@ -435,18 +409,6 @@ export default function LiveAttendance({
           </View>
         )}
 
-        {/* Debug Info */}
-        {debugInfo.length > 0 && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugTitle}>Debug Info:</Text>
-            {debugInfo.map((info, index) => (
-              <Text key={index} style={styles.debugItem}>
-                {info}
-              </Text>
-            ))}
-          </View>
-        )}
-
         {/* Bottom Controls */}
         <View style={styles.bottomControls}>
           <TouchableOpacity
@@ -630,26 +592,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     marginBottom: 4,
-  },
-  debugContainer: {
-    position: 'absolute',
-    top: 120,
-    right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 8,
-    borderRadius: 8,
-    maxWidth: 200,
-  },
-  debugTitle: {
-    color: '#10B981',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  debugItem: {
-    color: 'white',
-    fontSize: 10,
-    marginBottom: 2,
   },
   successMessage: {
     position: 'absolute',

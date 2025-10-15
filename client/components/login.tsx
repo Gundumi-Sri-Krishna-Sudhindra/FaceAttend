@@ -27,7 +27,6 @@ export default function Login({ onSubmit, onRegisterPress, onForgotPasswordPress
       setLocalError(null);
       setLocalSubmitting(true);
       const { token, user } = await loginApi({ username, password });
-      console.log('Logged in:', user.username, token.substring(0, 12) + '...');
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Login failed';
       setLocalError(msg);

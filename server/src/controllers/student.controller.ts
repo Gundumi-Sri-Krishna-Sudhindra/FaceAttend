@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Student } from '../models/Student';
 import { Faculty } from '../models/Faculty';
 import { getHuman, imageBase64ToTensor } from '../services/human';
+import { getFaceEmbedding } from '../services/facenet.service';
 
 export async function registerStudent(req: Request, res: Response): Promise<void> {
   console.log('=== STUDENT REGISTRATION REQUEST ===');
@@ -39,74 +40,30 @@ export async function registerStudent(req: Request, res: Response): Promise<void
     console.log('✅ All required fields present');
 
     // Face data is MANDATORY for student registration
-    if ((!faceDescriptor || faceDescriptor.length === 0) && !faceImageBase64) {
-      console.log('❌ No face data provided - face processing is mandatory');
+    if (!faceImageBase64) {
+      console.log('❌ No face image provided - face processing is mandatory');
       res.status(400).json({ 
-        message: 'Face data is required for student registration',
-        hint: 'Please capture a face image using the camera. The app will process it automatically.'
+        message: 'Face image is required for student registration',
+        hint: 'Please capture a face image using the camera.'
       });
       return;
     }
     
-    let finalDescriptor: number[] = [];
+    // Generate FaceNet embedding from the image
+    console.log('🔄 Processing face image with FaceNet...');
+    let faceEmbedding: number[];
     
-    if (faceDescriptor && faceDescriptor.length > 0) {
-      // Use client-provided face descriptor
-      console.log('✅ Using client-provided face descriptor, length:', faceDescriptor.length);
-      finalDescriptor = faceDescriptor;
-    } else if (faceImageBase64) {
-      // Process face on server as fallback
-      console.log('🔄 Processing face image on server (fallback)...');
-      try {
-        const imageData = await imageBase64ToTensor(faceImageBase64);
-        const human = await getHuman();
-        
-        // Check if we're using real Human library or fallback
-        if (human.detect && typeof human.detect === 'function') {
-          // Real Human library
-          console.log('🔄 Using real Human library for face detection...');
-          const result = await human.detect(imageData);
-          console.log('✅ Face detection completed, faces found:', result.face?.length || 0);
-          
-          if (!result.face || result.face.length === 0) {
-            console.log('❌ No faces detected in image');
-            res.status(400).json({ 
-              message: 'No face detected in the provided image',
-              hint: 'Please ensure the image contains a clear face and try again'
-            });
-            return;
-          }
-          
-          const faceDescriptor = result.face[0].embedding;
-          if (!faceDescriptor || faceDescriptor.length === 0) {
-            console.log('❌ No face embedding found');
-            res.status(400).json({ 
-              message: 'Could not extract face features from the image',
-              hint: 'Please ensure the face is clearly visible and well-lit'
-            });
-            return;
-          }
-          
-          finalDescriptor = Array.from(faceDescriptor);
-          console.log('✅ Real face descriptor computed on server, length:', finalDescriptor.length);
-        } else {
-          // Fallback to mock detection
-          console.log('🔄 Using mock face detection...');
-          const result = await human.detect(imageData);
-          finalDescriptor = Array.from(result.face[0].embedding);
-          console.log('✅ Mock face descriptor generated, length:', finalDescriptor.length);
-        }
-      } catch (error: any) {
-        console.error('❌ Server-side face processing error:', error);
-        res.status(500).json({ 
-          message: 'Failed to process face image on server',
-          hint: 'Please try capturing the image again with better lighting'
-        });
-        return;
-      }
+    try {
+      faceEmbedding = await getFaceEmbedding(faceImageBase64);
+      console.log('✅ FaceNet embedding generated, length:', faceEmbedding.length);
+    } catch (error: any) {
+      console.error('❌ FaceNet processing error:', error);
+      res.status(400).json({ 
+        message: error.message || 'Failed to process face image',
+        hint: 'Please ensure the image contains a clear face and try again'
+      });
+      return;
     }
-    
-    console.log('✅ Final descriptor length:', finalDescriptor.length);
 
     // Verify subject/section/sessionType exists in faculty timetable
     console.log('🔍 Verifying timetable for faculty:', facultyId);
@@ -158,8 +115,9 @@ export async function registerStudent(req: Request, res: Response): Promise<void
         console.log('ℹ️ Enrollment already exists');
       }
 
-      // Update faceDescriptor with latest capture
-      existing.faceDescriptor = finalDescriptor;
+      // Update embeddings with latest capture (keep legacy faceDescriptor for compatibility)
+      existing.faceDescriptor = faceEmbedding; // Keep legacy field
+      existing.embeddings = [faceEmbedding]; // Add to FaceNet embeddings
 
       await existing.save();
       console.log('✅ Student updated successfully');
@@ -172,7 +130,8 @@ export async function registerStudent(req: Request, res: Response): Promise<void
       name,
       rollNumber,
       enrollments: [{ subject, section, facultyId: new mongoose.Types.ObjectId(facultyId) }],
-      faceDescriptor: finalDescriptor,
+      faceDescriptor: faceEmbedding, // Keep legacy field
+      embeddings: [faceEmbedding], // Add to FaceNet embeddings
     });
 
     console.log('✅ Student created successfully with ID:', created.id);
