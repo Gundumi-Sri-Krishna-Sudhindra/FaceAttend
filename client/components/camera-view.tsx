@@ -101,31 +101,20 @@ export default function CameraView({ subjectCode, hours }: CameraViewProps) {
       setIsCapturing(true);
       try {
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
+          quality: 0.5,
           base64: true,
+          skipProcessing: true,
+          exif: false,
+          // @ts-ignore - shutterSound may be platform-specific
+          shutterSound: false,
         });
-        
-        console.log('Photo taken:', photo);
-        
-        // Show success message
-        Alert.alert(
-          'Success', 
-          'Photo captured successfully!',
-          [
-            { 
-              text: 'OK', 
-              onPress: () => {
-                // In kiosk mode, don't navigate back automatically
-                if (!isKioskMode) {
-                  router.back();
-                }
-              }
-            }
-          ]
-        );
+        console.log('Photo taken (silent):', {
+          width: photo?.width,
+          height: photo?.height,
+          hasBase64: !!photo?.base64,
+        });
       } catch (error) {
         console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to capture photo. Please try again.');
       } finally {
         setIsCapturing(false);
       }
@@ -181,6 +170,39 @@ export default function CameraView({ subjectCode, hours }: CameraViewProps) {
       </View>
     );
   }
+
+  // Live capture loop: take a silent photo every 0.5 seconds
+  useEffect(() => {
+    if (!permission?.granted) return;
+    let isMounted = true;
+    const intervalId = setInterval(async () => {
+      if (!isMounted) return;
+      if (!cameraRef.current) return;
+      if (isCapturing) return;
+      setIsCapturing(true);
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.5,
+          base64: true,
+          skipProcessing: true,
+          exif: false,
+          // @ts-ignore - shutterSound may be platform-specific
+          shutterSound: false,
+        });
+        console.log('Live frame captured (silent)');
+        // TODO: send photo.base64 to backend for processing as needed
+      } catch (e) {
+        console.log('Live capture error:', e);
+      } finally {
+        setIsCapturing(false);
+      }
+    }, 500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [permission?.granted, isCapturing]);
 
   return (
     <View style={styles.container}>

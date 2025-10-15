@@ -34,7 +34,7 @@ type DashboardProps = {
   onViewReports?: () => void;
 };
 
-// College time slots (11 working hours)
+// College time slots (12 working hours)
 // Added normalized start/end minutes to correctly compare with current time (24h)
 const TIME_SLOTS = [
   { hour: 1, time: '7:10 - 8:00', startMinutes: 7 * 60 + 10, endMinutes: 8 * 60 + 0 },
@@ -48,6 +48,7 @@ const TIME_SLOTS = [
   { hour: 9, time: '2:40 - 3:30', startMinutes: 14 * 60 + 40, endMinutes: 15 * 60 + 30 },
   { hour: 10, time: '3:50 - 4:40', startMinutes: 15 * 60 + 50, endMinutes: 16 * 60 + 40 },
   { hour: 11, time: '4:40 - 5:30', startMinutes: 16 * 60 + 40, endMinutes: 17 * 60 + 30 },
+  { hour: 12, time: '5:30 - 6:20', startMinutes: 17 * 60 + 30, endMinutes: 18 * 60 + 20 },
 ];
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

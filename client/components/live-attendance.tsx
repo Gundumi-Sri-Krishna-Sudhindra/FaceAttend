@@ -54,7 +54,8 @@ export default function LiveAttendance({
   const [isDetecting, setIsDetecting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [markedStudents, setMarkedStudents] = useState<Set<string>>(new Set());
-  const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusType, setStatusType] = useState<'success' | 'duplicate' | 'notfound' | 'error' | null>(null);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [lastProcessedImage, setLastProcessedImage] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
@@ -170,13 +171,15 @@ export default function LiveAttendance({
               setMarkedStudents(new Set(markedStudentsRef.current));
               
               // Show success feedback
-              setShowSuccessMessage(`✅ ${result.student.name} marked present!`);
+              setStatusType('success');
+              setStatusMessage(`✅ ${result.student.name} marked present!`);
               setRecentlyMarked(prev => [result.student.name, ...prev.slice(0, 4)]);
               onAttendanceMarked(result);
               
               // Clear success message after 2 seconds
               setTimeout(() => {
-                setShowSuccessMessage(null);
+                setStatusMessage(null);
+                setStatusType(null);
               }, 2000);
               
               // Clear recent list after 5 seconds
@@ -185,24 +188,30 @@ export default function LiveAttendance({
               }, 5000);
             } else {
               // Show duplicate punch message
-              setShowSuccessMessage(`⚠️ ${result.student.name} already marked`);
+              setStatusType('duplicate');
+              setStatusMessage(`⚠️ ${result.student.name} already marked`);
               setTimeout(() => {
-                setShowSuccessMessage(null);
+                setStatusMessage(null);
+                setStatusType(null);
               }, 1500);
             }
           } catch (apiError: any) {
             
             // Show user-friendly error message
             if (apiError.response?.status === 404) {
-              setShowSuccessMessage('❌ No matching student found');
+              setStatusType('notfound');
+              setStatusMessage('❌ No matching student found');
             } else if (apiError.response?.status === 400) {
-              setShowSuccessMessage('❌ Face not recognized');
+              setStatusType('notfound');
+              setStatusMessage('❌ Face not recognized');
             } else {
-              setShowSuccessMessage('❌ Detection failed');
+              setStatusType('error');
+              setStatusMessage('❌ Detection failed');
             }
             
             setTimeout(() => {
-              setShowSuccessMessage(null);
+              setStatusMessage(null);
+              setStatusType(null);
             }, 2000);
           }
         } catch (error: any) {
@@ -374,43 +383,26 @@ export default function LiveAttendance({
           )}
         </View>
 
-        {/* Attendance Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{attendanceStats.present}</Text>
-            <Text style={styles.statLabel}>Present</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{attendanceStats.absent}</Text>
-            <Text style={styles.statLabel}>Absent</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{attendanceStats.total}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-        </View>
+        {/* Attendance Stats removed per request */}
 
-        {/* Success Message */}
-        {showSuccessMessage && (
-          <View style={styles.successMessage}>
-            <Text style={styles.successMessageText}>{showSuccessMessage}</Text>
-          </View>
-        )}
+        {/* Status messages moved to bottomControls to avoid overlap */}
 
-        {/* Recently Marked Students */}
-        {recentlyMarked.length > 0 && (
-          <View style={styles.recentlyMarked}>
-            <Text style={styles.recentlyMarkedTitle}>Recently Marked:</Text>
-            {recentlyMarked.map((name, index) => (
-              <Text key={index} style={styles.recentlyMarkedItem}>
-                ✅ {name}
-              </Text>
-            ))}
-          </View>
-        )}
+        {/* Recently Marked Students panel removed per request */}
 
         {/* Bottom Controls */}
         <View style={styles.bottomControls}>
+          {statusMessage && (
+            <View style={[
+              styles.statusBanner,
+              styles.statusBannerTopInControls,
+              statusType === 'success' && styles.statusBannerSuccess,
+              statusType === 'duplicate' && styles.statusBannerDuplicate,
+              statusType === 'notfound' && styles.statusBannerNotFound,
+              statusType === 'error' && styles.statusBannerError,
+            ]}>
+              <Text style={styles.statusBannerText}>{statusMessage}</Text>
+            </View>
+          )}
           <TouchableOpacity
             style={[
               styles.controlButton, 
@@ -593,27 +585,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 4,
   },
-  successMessage: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 250 : 280,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(16, 185, 129, 0.95)',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+  // Removed old successMessage styles
+  statusBanner: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
-  successMessageText: {
+  statusBannerSuccess: {
+    backgroundColor: 'rgba(16, 185, 129, 0.95)',
+  },
+  statusBannerDuplicate: {
+    backgroundColor: 'rgba(234, 179, 8, 0.95)',
+  },
+  statusBannerNotFound: {
+    backgroundColor: 'rgba(239, 68, 68, 0.95)',
+  },
+  statusBannerError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.95)',
+  },
+  statusBannerText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  statusBannerTopInControls: {
+    marginBottom: 12,
+    alignSelf: 'stretch',
+  },
+  statusBannerBottomInControls: {
+    marginTop: 12,
+    alignSelf: 'stretch',
   },
   bottomControls: {
     position: 'absolute',

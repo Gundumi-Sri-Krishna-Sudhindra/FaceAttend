@@ -45,6 +45,7 @@ const TIME_SLOTS = [
   { hour: 9, time: '2:40 - 3:30', duration: '50 mins' },
   { hour: 10, time: '3:50 - 4:40', duration: '50 mins' },
   { hour: 11, time: '4:40 - 5:30', duration: '50 mins' },
+  { hour: 12, time: '5:30 - 6:20', duration: '50 mins' },
 ];
 
 export default function TimetableSetup({ existingTimetable, onSubmit, onSkip, isSubmitting = false }: TimetableSetupProps) {

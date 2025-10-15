@@ -21,9 +21,9 @@ def get_mtcnn():
         print("Loading MTCNN detector...")
         g_mtcnn = MTCNN(
             image_size=160,
-            margin=20,
-            thresholds=[0.6, 0.7, 0.7],
-            min_face_size=40,
+            margin=40,  # increase margin for better alignment robustness
+            thresholds=[0.5, 0.6, 0.7],  # slightly relaxed thresholds to improve recall
+            min_face_size=20,  # detect smaller faces
             keep_all=False,
             device='cpu')
         print("✅ MTCNN loaded.")
@@ -50,7 +50,7 @@ def resize_image_if_needed(img, max_len=720):
 def recognize_face(img):
     mtcnn = get_mtcnn()
     model = get_facenet()
-    angles = [0, -10, 10]
+    angles = [0, -15, 15]
     embeddings = []
     detected_any = False
     for angle in angles:
@@ -63,8 +63,13 @@ def recognize_face(img):
         if face_tensor is not None:
             detected_any = True
             with torch.no_grad():
+                # Original
                 emb = model(face_tensor.unsqueeze(0)).cpu().numpy()[0]
-            embeddings.append(emb)
+                embeddings.append(emb)
+                # Horizontal flip augmentation for slight robustness
+                flipped = torch.flip(face_tensor, dims=[2])  # flip width dimension (HWC -> after mtcnn is CHW; dims=[2]
+                emb_flip = model(flipped.unsqueeze(0)).cpu().numpy()[0]
+                embeddings.append(emb_flip)
     if not detected_any:
         return None, False
     # Average if multiple
