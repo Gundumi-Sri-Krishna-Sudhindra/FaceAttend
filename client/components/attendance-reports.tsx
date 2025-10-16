@@ -8,7 +8,9 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Modal
+  Modal,
+  Platform,
+  StatusBar
 } from 'react-native';
 import { getAttendanceReportsApi, AttendanceReportsResponse } from '@/api/attendance';
 
@@ -74,15 +76,11 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
     setShowDetailsModal(true);
   };
 
+  const containerStyle = [styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar as any)?.currentHeight || 0 : 0 }];
+
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Attendance Reports</Text>
-          <Pressable onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </Pressable>
-        </View>
+      <View style={containerStyle}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#10B981" />
           <Text style={styles.loadingText}>Loading reports...</Text>
@@ -93,13 +91,7 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Attendance Reports</Text>
-          <Pressable onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </Pressable>
-        </View>
+      <View style={containerStyle}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Error: {error}</Text>
           <Pressable onPress={() => loadReports()} style={styles.retryButton}>
@@ -111,13 +103,8 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Attendance Reports</Text>
-        <Pressable onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>✕</Text>
-        </Pressable>
-      </View>
+    <View style={containerStyle}>
+      {/* Header removed; handled at screen level */}
 
       <ScrollView 
         style={styles.content}
@@ -181,6 +168,7 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
                   <Text style={styles.statLabel}>Total</Text>
                 </View>
               </View>
+              <Text style={styles.cardHint}>Tap to view session details</Text>
             </Pressable>
           ))
         )}
@@ -295,37 +283,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
+  // Header removed in component to avoid duplicate headers
   content: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -387,6 +350,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  cardHint: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#9CA3AF',
+    fontSize: 12,
   },
   sessionHeader: {
     flexDirection: 'row',

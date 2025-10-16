@@ -69,6 +69,11 @@ export default function StudentRegistrationScreen() {
   }, [timetable, subject, section]);
 
   const openCamera = async () => {
+    // Require context selections first
+    if (!subject || !section || !sessionType) {
+      Alert.alert('Select Class Context', 'Please select Subject, Section, and Component first.');
+      return;
+    }
     if (!permission?.granted) {
       const p = await requestPermission();
       if (!p.granted) return;
@@ -165,12 +170,9 @@ export default function StudentRegistrationScreen() {
       });
       Alert.alert('Success', 'Student registered successfully!');
       
-      // Reset form
+      // Reset only student-specific fields; keep selected Subject/Section/Component
       setName('');
       setRollNumber('');
-      setSubject(null);
-      setSection(null);
-      setSessionType(null);
       setFaceDescriptor(null);
       setFaceImageBase64(null);
       setCapturedImageUri(null);
@@ -200,22 +202,43 @@ export default function StudentRegistrationScreen() {
       </View>
       
       <View style={{ flex: 1, padding: 16 }}>
-        <Text style={{ marginBottom: 6, fontWeight: '600' }}>Student Name</Text>
-        <TextInput value={name} onChangeText={setName} placeholder="Enter name" style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginBottom: 12 }} />
+        {/* Step 1: Select class context */}
+        <View style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+          <Text style={{ fontWeight: '700', marginBottom: 8 }}>Step 1: Select Class Context</Text>
+          <Dropdown label="Subject" value={subject} onChange={(v) => { setSubject(v); setSection(null); setSessionType(null); }} options={subjectOptions} />
+          <Dropdown label="Section" value={section} onChange={(v) => { setSection(v); setSessionType(null); }} options={sectionOptions} disabled={!subject} />
+          <Dropdown label="Component (Session Type)" value={sessionType} onChange={setSessionType} options={sessionOptions} disabled={!subject || !section} />
+        </View>
 
-        <Text style={{ marginBottom: 6, fontWeight: '600' }}>Roll Number</Text>
-        <TextInput value={rollNumber} onChangeText={setRollNumber} placeholder="Enter roll number" autoCapitalize="characters" style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginBottom: 12 }} />
+        {/* Step 2: Student details & face capture (enabled after context) */}
+        <View style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12 }}>
+          <Text style={{ fontWeight: '700', marginBottom: 8 }}>Step 2: Student Details</Text>
+          <Text style={{ marginBottom: 6, fontWeight: '600', color: !subject || !section || !sessionType ? '#9CA3AF' : '#111827' }}>Student Name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder={!subject || !section || !sessionType ? 'Select class context first' : 'Enter name'}
+            editable={!!subject && !!section && !!sessionType}
+            style={{ backgroundColor: !subject || !section || !sessionType ? '#F3F4F6' : 'white', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginBottom: 12 }}
+          />
 
-        <Dropdown label="Subject" value={subject} onChange={setSubject} options={subjectOptions} />
-        <Dropdown label="Section" value={section} onChange={setSection} options={sectionOptions} disabled={!subject} />
-        <Dropdown label="Session Type" value={sessionType} onChange={setSessionType} options={sessionOptions} disabled={!subject || !section} />
+          <Text style={{ marginBottom: 6, fontWeight: '600', color: !subject || !section || !sessionType ? '#9CA3AF' : '#111827' }}>Roll Number</Text>
+          <TextInput
+            value={rollNumber}
+            onChangeText={setRollNumber}
+            placeholder={!subject || !section || !sessionType ? 'Select class context first' : 'Enter roll number'}
+            autoCapitalize="characters"
+            editable={!!subject && !!section && !!sessionType}
+            style={{ backgroundColor: !subject || !section || !sessionType ? '#F3F4F6' : 'white', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginBottom: 12 }}
+          />
 
-        <Pressable
-          onPress={openCamera}
-          style={({ pressed }) => ({ backgroundColor: '#EF4444', paddingVertical: 12, borderRadius: 8, alignItems: 'center', opacity: pressed ? 0.9 : 1, marginBottom: 12 })}
-        >
-          <Text style={{ color: 'white', fontWeight: '600' }}>{faceReady ? 'Retake Face' : 'Capture Face'}</Text>
-        </Pressable>
+          <Pressable
+            onPress={openCamera}
+            disabled={!subject || !section || !sessionType}
+            style={({ pressed }) => ({ backgroundColor: !subject || !section || !sessionType ? '#9CA3AF' : '#EF4444', paddingVertical: 12, borderRadius: 8, alignItems: 'center', opacity: pressed ? 0.9 : 1, marginBottom: 12 })}
+          >
+            <Text style={{ color: 'white', fontWeight: '600' }}>{faceReady ? 'Retake Face' : 'Capture Face'}</Text>
+          </Pressable>
 
             {faceReady && (
               <View style={{ marginBottom: 12 }}>
@@ -241,13 +264,14 @@ export default function StudentRegistrationScreen() {
               </View>
             )}
 
-        <Pressable
-          onPress={onRegister}
-          disabled={!canSubmit || !!loading}
-          style={({ pressed }) => ({ backgroundColor: !canSubmit ? '#9CA3AF' : '#10B981', paddingVertical: 12, borderRadius: 8, alignItems: 'center', opacity: pressed ? 0.95 : 1 })}
-        >
-          <Text style={{ color: 'white', fontWeight: '700' }}>{loading ? 'Registering...' : 'Register'}</Text>
-        </Pressable>
+          <Pressable
+            onPress={onRegister}
+            disabled={!canSubmit || !!loading}
+            style={({ pressed }) => ({ backgroundColor: !canSubmit ? '#9CA3AF' : '#10B981', paddingVertical: 12, borderRadius: 8, alignItems: 'center', opacity: pressed ? 0.95 : 1 })}
+          >
+            <Text style={{ color: 'white', fontWeight: '700' }}>{loading ? 'Registering...' : 'Register'}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <Modal visible={cameraOpen} animationType="slide" onRequestClose={() => setCameraOpen(false)}>

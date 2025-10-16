@@ -62,7 +62,6 @@ export default function Dashboard({
   onViewReports
 }: DashboardProps) {
   const [isHoursModalVisible, setHoursModalVisible] = useState(false);
-  const [showReports, setShowReports] = useState(false);
 
   const getCurrentSession = () => {
     const now = new Date();
@@ -219,22 +218,21 @@ export default function Dashboard({
         </Pressable>
 
         <Pressable
-          onPress={() => setShowReports(true)}
+          onPress={() => {
+            try {
+              // @ts-ignore using expo-router link via global import
+              require('expo-router').router.push('/attendance-reports');
+            } catch {}
+          }}
           style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
           accessibilityRole="button"
           accessibilityLabel="View Reports"
         >
-          <Text style={styles.actionButtonText}>View Reports</Text>
+          <Text style={styles.actionButtonText}>View Attendance Reports</Text>
         </Pressable>
       </View>
       </ScrollView>
 
-      {/* Attendance Reports Modal */}
-      {showReports && (
-        <AttendanceReports
-          onClose={() => setShowReports(false)}
-        />
-      )}
     </View>
   );
 }
