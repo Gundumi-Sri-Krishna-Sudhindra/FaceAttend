@@ -96,6 +96,8 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
       try {
         await tryWriteAndShare((FileSystem as any).cacheDirectory);
       } catch (err2) {
+        // Native fallback for Android: write to Downloads
+        // Optional: implement alternative save methods if needed
         Alert.alert('Export Failed', 'Could not export CSV.');
       }
     }
@@ -337,22 +339,20 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
               <Text style={styles.modalCloseButtonText}>✕</Text>
             </Pressable>
           </View>
-          {/* Export bar */}
-          <View style={styles.exportBar}>
-            <Pressable
-              onPress={() => setShowExportModal(true)}
-              style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.9 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Export session"
-            >
-              <Text style={styles.exportButtonText}>Export</Text>
-            </Pressable>
-          </View>
+          {/* Export button moved into details card (top-right) */}
 
           {selectedSession && (
             <ScrollView style={styles.modalContent}>
               {/* Session Info */}
               <View style={styles.sessionInfoCard}>
+                <Pressable
+                  onPress={() => setShowExportModal(true)}
+                  style={({ pressed }) => [styles.exportIconBtn, pressed && { opacity: 0.9 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Export session"
+                >
+                  <Text style={styles.exportIconText}>Export</Text>
+                </Pressable>
                 <Text style={styles.sessionInfoTitle}>{selectedSession.subject}</Text>
                 <Text style={styles.sessionInfoText}>
                   {selectedSession.section} • {selectedSession.sessionType}
@@ -630,22 +630,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  exportBar: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  exportButton: {
+  exportIconBtn: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
     backgroundColor: '#111827',
-    paddingVertical: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
-    alignItems: 'center',
+    zIndex: 2,
   },
-  exportButtonText: {
+  exportIconText: {
     color: 'white',
     fontWeight: '700',
+    fontSize: 12,
   },
   modalTitle: {
     fontSize: 20,
