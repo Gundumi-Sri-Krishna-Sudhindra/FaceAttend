@@ -118,12 +118,17 @@ export default function Dashboard({
           <Text style={styles.appName}>FaceAttend</Text>
         </View>
         <Pressable
-          onPress={onLogout}
+          onPress={() => {
+            try {
+              // @ts-ignore using expo-router link via global import
+              require('expo-router').router.push('/settings');
+            } catch {}
+          }}
           style={({ pressed }) => [styles.headerLogoutButton, pressed && styles.headerLogoutButtonPressed]}
           accessibilityRole="button"
-          accessibilityLabel="Logout"
+          accessibilityLabel="Settings"
         >
-          <Text style={styles.headerLogoutText}>Logout</Text>
+          <Text style={styles.headerLogoutText}>Settings</Text>
         </Pressable>
       </View>
 

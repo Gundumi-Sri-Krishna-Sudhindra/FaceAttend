@@ -190,40 +190,40 @@ EXPO_PUBLIC_API_URL=http://localhost:3000
 Supports comma-separated URLs for failover.
 
 ### Server `.env`
-```env
-PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/face-attend
-JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRES_IN=7d
-FACENET_SERVICE_URL=http://localhost:5001
-```
+   ```env
+   PORT=3000
+   MONGODB_URI=mongodb://127.0.0.1:27017/face-attend
+   JWT_SECRET=your-super-secret-jwt-key
+   JWT_EXPIRES_IN=7d
+   FACENET_SERVICE_URL=http://localhost:5001
+   ```
 
 ### Python Service
 - Runs at `:5001` by default. Restart after changing thresholds/margins.
 
 ## 🧭 Setup & Run
 ### One command
-```bash
+   ```bash
 ./start-services.sh
 ```
 Starts: Python (5001), Server (3000), Expo dev server.
 
 ### Manual
 1) Python FaceNet
-```bash
+   ```bash
 cd facenet_service && pip install -r requirements.txt
 python face_recognition_service.py
-```
+   ```
 2) Server
-```bash
+   ```bash
 cd server && npm install
 npm run dev
 ```
 3) Client
-```bash
+   ```bash
 cd client && npm install
-npm start
-```
+   npm start
+   ```
 
 ## 🛠️ Troubleshooting & Tuning
 - Face not detected: ensure good lighting, frontal face; Python service logs “No face detected”.

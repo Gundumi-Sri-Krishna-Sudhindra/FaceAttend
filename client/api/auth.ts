@@ -14,4 +14,22 @@ export async function registerApi(data: RegisterInput): Promise<LoginResponse> {
   return res.data;
 }
 
+export type UpdateProfileInput = { name: string; email: string; username: string };
+export type UpdateProfileResponse = { user: { id: string; name: string; username: string; email?: string } };
+
+export async function updateProfileApi(data: UpdateProfileInput): Promise<UpdateProfileResponse> {
+  const res = await http.put<UpdateProfileResponse>('/api/auth/profile', data);
+  return res.data;
+}
+
+export async function getProfileApi(): Promise<UpdateProfileResponse> {
+  const res = await http.get<UpdateProfileResponse>('/api/auth/profile');
+  return res.data;
+}
+
+export async function changePasswordApi(data: { oldPassword: string; newPassword: string; confirmPassword: string }): Promise<{ message: string }> {
+  const res = await http.post<{ message: string }>('/api/auth/change-password', data);
+  return res.data;
+}
+
 
