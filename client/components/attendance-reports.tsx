@@ -12,6 +12,8 @@ import {
   Platform,
   StatusBar
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import Papa from 'papaparse';
 import { getAttendanceReportsApi, AttendanceReportsResponse } from '@/api/attendance';
 
 type AttendanceReportsProps = {
@@ -25,6 +27,150 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+
+  // Helpers: Export
+  const buildCsv = (session: any) => {
+    const headerSection = [[
+      'Subject','Section','Type','Date','Hours','Present','Absent','Total','Attendance %'
+    ], [
+      session.subject,
+      session.section,
+      session.sessionType,
+      new Date(session.date).toISOString(),
+      (session.hours || []).join(' '),
+      session.presentStudents,
+      session.absentStudents,
+      session.totalStudents,
+      session.attendancePercentage
+    ]];
+    const presentHeader = [['Present Students']];
+    const presentRows = [['Name','Roll','Marked At','Confidence'], ...(
+      (session.presentStudentsList || []).map((st: any) => [
+        st.name,
+        st.rollNumber,
+        st.markedAt ? new Date(st.markedAt).toISOString() : '',
+        st.confidence != null ? Math.round(st.confidence * 100) + '%' : ''
+      ])
+    )];
+    const absentHeader = [['Absent Students']];
+    const absentRows = [['Name','Roll'], ...(
+      (session.absentStudentsList || []).map((st: any) => [st.name, st.rollNumber])
+    )];
+
+    const all = [
+      ...headerSection,
+      [],
+      ...presentHeader,
+      ...presentRows,
+      [],
+      ...absentHeader,
+      ...absentRows,
+    ];
+    return Papa.unparse(all, { quotes: true });
+  };
+
+  const exportAsCsv = async (session: any) => {
+    // Add UTF-8 BOM so Excel opens correctly
+    const csv = "\uFEFF" + buildCsv(session);
+    const safe = (s: string) => String(s || '').replace(/\s+/g, '_');
+    const fileName = `attendance_${safe(session.subject)}_${safe(session.section)}_${Date.now()}.csv`;
+    const Sharing = require('expo-sharing');
+    const tryWriteAndShare = async (dir: string | null | undefined) => {
+      if (!dir) throw new Error('No writable directory');
+      const fileUri = dir + fileName;
+      await FileSystem.writeAsStringAsync(fileUri, csv);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export Attendance (CSV)',
+          UTI: 'public.comma-separated-values-text',
+        });
+      } else {
+        Alert.alert('Saved', `CSV saved to: ${fileUri}`);
+      }
+    };
+    try {
+      await tryWriteAndShare((FileSystem as any).documentDirectory);
+    } catch (err1) {
+      try {
+        await tryWriteAndShare((FileSystem as any).cacheDirectory);
+      } catch (err2) {
+        Alert.alert('Export Failed', 'Could not export CSV.');
+      }
+    }
+  };
+
+  const buildHtml = (session: any) => {
+    const fmt = (d: any) => d ? new Date(d).toLocaleString() : '';
+    const pres = (session.presentStudentsList || []).map((st: any) => `
+      <tr>
+        <td>${st.name}</td>
+        <td>${st.rollNumber}</td>
+        <td>${fmt(st.markedAt)}</td>
+        <td>${st.confidence != null ? Math.round(st.confidence * 100) + '%' : ''}</td>
+      </tr>
+    `).join('');
+    const abss = (session.absentStudentsList || []).map((st: any) => `
+      <tr>
+        <td>${st.name}</td>
+        <td>${st.rollNumber}</td>
+      </tr>
+    `).join('');
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: -apple-system, Roboto, Arial, sans-serif; padding: 16px; }
+            h1 { font-size: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+            th { background: #f3f4f6; text-align: left; }
+            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .pill { display: inline-block; padding: 2px 6px; background: #111827; color: #fff; border-radius: 8px; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <h1>Attendance Report</h1>
+          <div class="grid">
+            <div><strong>Subject:</strong> ${session.subject}</div>
+            <div><strong>Section:</strong> ${session.section}</div>
+            <div><strong>Type:</strong> ${session.sessionType}</div>
+            <div><strong>Date:</strong> ${fmt(session.date)}</div>
+            <div><strong>Hours:</strong> ${(session.hours || []).join(', ')}</div>
+            <div><strong>Summary:</strong> <span class="pill">${session.presentStudents}/${session.totalStudents} present</span></div>
+          </div>
+          <h2>Present Students</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Roll</th><th>Marked At</th><th>Confidence</th></tr></thead>
+            <tbody>${pres || '<tr><td colspan="4">None</td></tr>'}</tbody>
+          </table>
+          <h2>Absent Students</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Roll</th></tr></thead>
+            <tbody>${abss || '<tr><td colspan="2">None</td></tr>'}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+  };
+
+  const exportAsPdf = async (session: any) => {
+    try {
+      const html = buildHtml(session);
+      const Print = require('expo-print');
+      const Sharing = require('expo-sharing');
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Export Attendance (PDF)' });
+      } else {
+        Alert.alert('Saved', `PDF saved to: ${uri}`);
+      }
+    } catch (e) {
+      Alert.alert('Export Failed', 'Could not export PDF.');
+    }
+  };
 
   const loadReports = async (isRefresh = false) => {
     try {
@@ -191,6 +337,17 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
               <Text style={styles.modalCloseButtonText}>✕</Text>
             </Pressable>
           </View>
+          {/* Export bar */}
+          <View style={styles.exportBar}>
+            <Pressable
+              onPress={() => setShowExportModal(true)}
+              style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.9 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Export session"
+            >
+              <Text style={styles.exportButtonText}>Export</Text>
+            </Pressable>
+          </View>
 
           {selectedSession && (
             <ScrollView style={styles.modalContent}>
@@ -272,6 +429,48 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
               )}
             </ScrollView>
           )}
+        </View>
+      </Modal>
+
+      {/* Export format chooser */}
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.exportOverlay}>
+          <View style={styles.exportSheet}>
+            <Text style={styles.exportTitle}>Export as</Text>
+            <Pressable
+              onPress={async () => {
+                setShowExportModal(false);
+                if (selectedSession) {
+                  await exportAsPdf(selectedSession);
+                }
+              }}
+              style={({ pressed }) => [styles.exportOption, pressed && { opacity: 0.9 }]}
+            >
+              <Text style={styles.exportOptionText}>PDF</Text>
+            </Pressable>
+            <Pressable
+              onPress={async () => {
+                setShowExportModal(false);
+                if (selectedSession) {
+                  await exportAsCsv(selectedSession);
+                }
+              }}
+              style={({ pressed }) => [styles.exportOption, pressed && { opacity: 0.9 }]}
+            >
+              <Text style={styles.exportOptionText}>CSV</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowExportModal(false)}
+              style={({ pressed }) => [styles.exportCancel, pressed && { opacity: 0.9 }]}
+            >
+              <Text style={styles.exportCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
         </View>
       </Modal>
     </View>
@@ -431,6 +630,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
+  exportBar: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  exportButton: {
+    backgroundColor: '#111827',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  exportButtonText: {
+    color: 'white',
+    fontWeight: '700',
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -452,6 +668,51 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: 16,
+  },
+  exportOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  exportSheet: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '80%',
+    padding: 16,
+  },
+  exportTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  exportOption: {
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  exportOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  exportCancel: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  exportCancelText: {
+    color: 'white',
+    fontWeight: '700',
   },
   // Session info styles
   sessionInfoCard: {
