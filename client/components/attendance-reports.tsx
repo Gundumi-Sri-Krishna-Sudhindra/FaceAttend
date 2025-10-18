@@ -12,8 +12,7 @@ import {
   Platform,
   StatusBar
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import Papa from 'papaparse';
 import { getAttendanceReportsApi, AttendanceReportsResponse } from '@/api/attendance';
 
@@ -80,46 +79,44 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
       const safe = (s: string) => String(s || '').replace(/[^a-zA-Z0-9]/g, '_');
       const fileName = `attendance_${safe(session.subject)}_${safe(session.section)}_${Date.now()}.csv`;
       
-      // Use expo-print to create a text file (similar to PDF)
-      const Print = require('expo-print');
+      // Use legacy FileSystem API to create CSV file
       const Sharing = require('expo-sharing');
       
-      // Create HTML content with CSV data
-      const htmlContent = `
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>${fileName}</title>
-          </head>
-          <body>
-            <pre style="font-family: monospace; white-space: pre-wrap;">${csv}</pre>
-          </body>
-        </html>
-      `;
+      // Create file path
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       
-      // Generate file using expo-print
-      const { uri } = await Print.printToFileAsync({ 
-        html: htmlContent,
-        base64: false
-      });
-      
-      // Rename the file to have .csv extension
-      const csvUri = uri.replace('.pdf', '.csv');
+      // Write CSV content to file
+      await FileSystem.writeAsStringAsync(fileUri, csv);
       
       // Share the CSV file
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(csvUri, {
+        await Sharing.shareAsync(fileUri, {
           mimeType: 'text/csv',
           dialogTitle: 'Export Attendance (CSV)',
           UTI: 'public.comma-separated-values-text',
         });
       } else {
-        Alert.alert('CSV Saved', `CSV file saved to: ${csvUri}`);
+        Alert.alert('CSV Saved', `CSV file saved to: ${fileUri}`);
       }
       
     } catch (error) {
       console.error('CSV export error:', error);
-      Alert.alert('Export Failed', 'Could not export CSV file.');
+      
+      // Fallback: Show CSV content
+      const csv = buildCsv(session);
+      Alert.alert(
+        'CSV Export Failed', 
+        'Unable to create CSV file. Here\'s the data:\n\n' + csv.substring(0, 500) + (csv.length > 500 ? '...' : ''),
+        [
+          { text: 'OK', style: 'default' },
+          { 
+            text: 'Show Full Data', 
+            onPress: () => {
+              Alert.alert('Full CSV Data', csv);
+            }
+          }
+        ]
+      );
     }
   };
 
