@@ -246,4 +246,4 @@ cd client && npm install
 MIT License - see [LICENSE](LICENSE).
 
 ---
-FaceAttend – AI-powered, kiosk-grade attendance made simple.
+FaceAttend – Kiosk-grade attendance made simple.
