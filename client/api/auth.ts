@@ -27,8 +27,14 @@ export async function getProfileApi(): Promise<UpdateProfileResponse> {
   return res.data;
 }
 
-export async function changePasswordApi(data: { oldPassword: string; newPassword: string; confirmPassword: string }): Promise<{ message: string }> {
-  const res = await http.post<{ message: string }>('/api/auth/change-password', data);
+export type FacultySubjectsResponse = {
+  subjects: string[];
+  subjectSections: { [key: string]: string[] };
+  subjectSessionTypes: { [key: string]: string[] };
+};
+
+export async function getFacultySubjectsApi(): Promise<FacultySubjectsResponse> {
+  const res = await http.get<FacultySubjectsResponse>('/api/auth/subjects');
   return res.data;
 }
 

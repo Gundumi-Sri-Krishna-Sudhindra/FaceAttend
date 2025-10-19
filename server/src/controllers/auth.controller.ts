@@ -187,4 +187,67 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   }
 }
 
+export async function getFacultySubjects(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const faculty = await Faculty.findById(userId).select('timetable');
+    if (!faculty) {
+      res.status(404).json({ message: 'Faculty not found' });
+      return;
+    }
+
+    // Extract unique subjects from timetable
+    const subjects = new Set<string>();
+    const subjectSections: { [key: string]: Set<string> } = {};
+    const subjectSessionTypes: { [key: string]: Set<string> } = {};
+
+    if (faculty.timetable && faculty.timetable.length > 0) {
+      faculty.timetable.forEach(day => {
+        if (day.sessions) {
+          day.sessions.forEach(session => {
+            subjects.add(session.subject);
+            
+            if (!subjectSections[session.subject]) {
+              subjectSections[session.subject] = new Set<string>();
+            }
+            subjectSections[session.subject].add(session.section);
+            
+            if (!subjectSessionTypes[session.subject]) {
+              subjectSessionTypes[session.subject] = new Set<string>();
+            }
+            subjectSessionTypes[session.subject].add(session.sessionType);
+          });
+        }
+      });
+    }
+
+    // Convert to arrays
+    const subjectsArray = Array.from(subjects).sort();
+    const subjectSectionsArray: { [key: string]: string[] } = {};
+    const subjectSessionTypesArray: { [key: string]: string[] } = {};
+    
+    Object.keys(subjectSections).forEach(subject => {
+      subjectSectionsArray[subject] = Array.from(subjectSections[subject]).sort();
+    });
+    
+    Object.keys(subjectSessionTypes).forEach(subject => {
+      subjectSessionTypesArray[subject] = Array.from(subjectSessionTypes[subject]).sort();
+    });
+
+    res.json({ 
+      subjects: subjectsArray,
+      subjectSections: subjectSectionsArray,
+      subjectSessionTypes: subjectSessionTypesArray
+    });
+  } catch (error) {
+    console.error('Get faculty subjects error:', error);
+    res.status(500).json({ message: 'Failed to fetch faculty subjects' });
+  }
+}
+
 

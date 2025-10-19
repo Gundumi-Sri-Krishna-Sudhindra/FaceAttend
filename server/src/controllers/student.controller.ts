@@ -142,4 +142,103 @@ export async function registerStudent(req: Request, res: Response): Promise<void
   }
 }
 
+export async function getStudents(req: Request, res: Response): Promise<void> {
+  try {
+    const facultyId = req.userId;
+    if (!facultyId || !mongoose.isValidObjectId(facultyId)) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const { subject, section } = req.query as { subject?: string; section?: string };
+    
+    if (!subject || !section) {
+      res.status(400).json({ message: 'subject and section are required' });
+      return;
+    }
+
+    // Find students enrolled in the specific subject/section with this faculty
+    const students = await Student.find({
+      'enrollments.subject': subject,
+      'enrollments.section': section,
+      'enrollments.facultyId': new mongoose.Types.ObjectId(facultyId)
+    }).select('name rollNumber enrollments createdAt').lean();
+
+    // Transform the data to include session type from enrollments
+    const transformedStudents = students.map(student => {
+      const enrollment = student.enrollments.find(e => 
+        e.subject === subject && 
+        e.section === section && 
+        String(e.facultyId) === String(facultyId)
+      );
+      
+      return {
+        id: student._id.toString(),
+        name: student.name,
+        rollNumber: student.rollNumber,
+        subject: subject,
+        section: section,
+        sessionType: enrollment?.sessionType || 'Lecture', // Default to Lecture if not specified
+        createdAt: student.createdAt
+      };
+    });
+
+    res.json({ students: transformedStudents });
+  } catch (error) {
+    console.error('Get students error:', error);
+    res.status(500).json({ message: 'Failed to fetch students' });
+  }
+}
+
+export async function deleteStudent(req: Request, res: Response): Promise<void> {
+  try {
+    const facultyId = req.userId;
+    if (!facultyId || !mongoose.isValidObjectId(facultyId)) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const { studentId } = req.params;
+    if (!studentId || !mongoose.isValidObjectId(studentId)) {
+      res.status(400).json({ message: 'Valid student ID is required' });
+      return;
+    }
+
+    // Find the student and verify they are enrolled with this faculty
+    const student = await Student.findById(studentId);
+    if (!student) {
+      res.status(404).json({ message: 'Student not found' });
+      return;
+    }
+
+    // Check if student is enrolled with this faculty
+    const hasEnrollment = student.enrollments.some(e => 
+      String(e.facultyId) === String(facultyId)
+    );
+
+    if (!hasEnrollment) {
+      res.status(403).json({ message: 'You can only delete students enrolled in your classes' });
+      return;
+    }
+
+    // Remove enrollment for this faculty
+    student.enrollments = student.enrollments.filter(e => 
+      String(e.facultyId) !== String(facultyId)
+    );
+
+    // If no enrollments left, delete the student entirely
+    if (student.enrollments.length === 0) {
+      await Student.findByIdAndDelete(studentId);
+      res.json({ message: 'Student deleted successfully' });
+    } else {
+      // Otherwise, just remove the enrollment
+      await student.save();
+      res.json({ message: 'Student enrollment removed successfully' });
+    }
+  } catch (error) {
+    console.error('Delete student error:', error);
+    res.status(500).json({ message: 'Failed to delete student' });
+  }
+}
+
 

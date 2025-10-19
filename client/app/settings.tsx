@@ -58,7 +58,12 @@ export default function SettingsScreen() {
             router.push('/change-password');
           } catch {}
         }} />
-        <ActionButton title="Manage Students" onPress={() => {}} />
+        <ActionButton title="Manage Students" onPress={() => {
+          try {
+            // @ts-ignore
+            router.push('/manage-students');
+          } catch {}
+        }} />
 
         {/* Camera Permission Toggle */}
         <View style={{ backgroundColor: 'white', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 }}>

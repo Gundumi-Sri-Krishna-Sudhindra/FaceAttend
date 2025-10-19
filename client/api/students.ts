@@ -10,8 +10,27 @@ export type RegisterStudentInput = {
   faceImageBase64?: string; // Fallback: base64 image for server processing
 };
 
-export async function registerStudentApi(data: RegisterStudentInput): Promise<{ message: string; studentId: string }> {
-  const res = await http.post<{ message: string; studentId: string }>(`/api/students/register`, data);
+export type Student = {
+  id: string;
+  name: string;
+  rollNumber: string;
+  subject: string;
+  section: string;
+  sessionType: string;
+  createdAt: string;
+};
+
+export type GetStudentsResponse = {
+  students: Student[];
+};
+
+export async function getStudentsApi(subject: string, section: string): Promise<GetStudentsResponse> {
+  const res = await http.get<GetStudentsResponse>(`/api/students?subject=${encodeURIComponent(subject)}&section=${encodeURIComponent(section)}`);
+  return res.data;
+}
+
+export async function deleteStudentApi(studentId: string): Promise<{ message: string }> {
+  const res = await http.delete<{ message: string }>(`/api/students/${studentId}`);
   return res.data;
 }
 
