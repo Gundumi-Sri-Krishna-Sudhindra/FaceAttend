@@ -1,5 +1,7 @@
 # FaceAttend – Face Recognition Attendance System
 
+FaceAttend is a modernattendance management solution designed for educational institutions. The app leverages advanced face recognition technology to automatically identify and mark student attendance, eliminating the need for manual roll calls and preventing proxy attendance. With its intuitive mobile interface and secure kiosk mode, FaceAttend streamlines the attendance process while maintaining data integrity and security.
+
 FaceAttend is an end-to-end attendance system that uses face recognition to identify students and mark attendance automatically. It consists of:
 - A mobile client (React Native + Expo)
 - A Node.js/Express backend with MongoDB
@@ -10,6 +12,9 @@ Manual attendance is time-consuming, error-prone, and susceptible to proxy atten
 
 ## The Solution
 FaceAttend captures live frames from a kiosk-mode device, generates a robust FaceNet embedding server-side, matches against enrolled students for the current class session, and updates attendance in real time with clear feedback to the operator.
+
+## 📱 Kiosk Mode for Secure Attendance
+FaceAttend is designed specifically for faculty to take classroom attendance using their mobile device. In many classrooms, faculty temporarily hand their phone to a student (or a student representative) to capture attendance. To prevent misuse while the device is out of the instructor's hands, FaceAttend includes a kiosk mode. Kiosk mode restricts access to the device to only the attendance capture flow — it prevents students from opening other apps, accessing device settings, or navigating away from the attendance screen while recording attendance.
 
 ## 🚀 Features
 - Face recognition attendance with FaceNet embeddings (Python microservice)
