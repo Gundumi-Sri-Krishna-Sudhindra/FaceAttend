@@ -1,7 +1,7 @@
 import axios from "axios";
 import FormData from "form-data";
 
-const FACENET_SERVICE_URL = process.env.FACENET_SERVICE_URL || "http://localhost:5001";
+const FACENET_SERVICE_URL = process.env.FACENET_SERVICE_URL;
 
 export interface FaceRecognitionResult {
   success: boolean;

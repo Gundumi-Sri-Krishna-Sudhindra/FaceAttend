@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 import { AttendanceSession } from '../models/Attendance';
 import { Student } from '../models/Student';
 import { Faculty } from '../models/Faculty';
-import { getHuman, imageBase64ToTensor } from '../services/human';
 import { getFaceEmbedding } from '../services/facenet.service';
 
 // Face matching threshold (cosine similarity) - higher threshold for FaceNet embeddings

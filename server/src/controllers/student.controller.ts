@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Student } from '../models/Student';
 import { Faculty } from '../models/Faculty';
-import { getHuman, imageBase64ToTensor } from '../services/human';
 import { getFaceEmbedding } from '../services/facenet.service';
 
 export async function registerStudent(req: Request, res: Response): Promise<void> {
