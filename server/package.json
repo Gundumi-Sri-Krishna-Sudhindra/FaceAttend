@@ -15,7 +15,6 @@
   "description": "",
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
-    "@vladmandic/human": "^3.3.6",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "canvas": "^3.2.0",
