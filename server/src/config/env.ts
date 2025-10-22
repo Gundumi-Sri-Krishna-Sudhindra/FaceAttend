@@ -24,7 +24,6 @@ export const env = {
   mongoUri: requireEnv('MONGODB_URI'),
   jwtSecret: requireEnv('JWT_SECRET'),
   jwtExpiresIn: requireEnv('JWT_EXPIRES_IN'),
-  corsOrigins: (process.env.CORS_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean)) || [],
   allowLan8081: process.env.ALLOW_LAN_8081 === 'true',
 } as const;
 

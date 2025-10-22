@@ -14,21 +14,10 @@ export function createApp(): Application {
 
   app.use(helmet());
   app.use(cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      const allowed = new Set(env.corsOrigins);
-      if (allowed.has(origin)) return callback(null, true);
-
-      if (env.allowLan8081) {
-        const lan8081 = /^http:\/\/(10\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)[0-9.]+:8081$/;
-        if (lan8081.test(origin)) return callback(null, true);
-      }
-
-      callback(new Error('CORS not allowed for origin: ' + origin));
-    },
+    origin: '*', // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false, // Set to false when using origin: '*'
   }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));

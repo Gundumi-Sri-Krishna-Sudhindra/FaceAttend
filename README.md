@@ -393,10 +393,11 @@ FACENET_SERVICE_URL=http://localhost:5001
 
 **Optional Configuration:**
 ```env
-CORS_ORIGINS=http://localhost:8081,http://localhost:3000
 ALLOW_LAN_8081=true
 NODE_ENV=development
 ```
+
+**Note:** CORS is configured to allow all origins (`*`) by default. Set `ALLOW_LAN_8081=true` for mobile device testing on the same network.
 
 ### Python Service Environment
 **Default Configuration:**
