@@ -68,13 +68,39 @@ facenet_service/
 └── README.md
 ```
 
+## ⚙️ Settings & Student Management
+
+### Settings Module
+A dedicated section within the app for faculty and administrators to manage app-level preferences and permissions.
+
+**Features:**
+- **Camera Permissions Management** – Allows checking and re-requesting permissions directly within the app for smoother kiosk setup.  
+- **Profile Management** – Update faculty profile details such as name, email, and password securely via JWT-protected endpoints.  
+- **Forgot Password Flow** – Supports secure password reset through email verification or admin reset (depending on role).  
+- **Device Settings (Kiosk Mode)** – Optional device lock, orientation lock, and inactivity timeout to prevent misuse in kiosk environments.
+
+### Student Management
+Integrated tools to manage student data efficiently from the faculty dashboard or settings panel.
+
+**Capabilities:**
+- **Fetch All Students** – Retrieve students dynamically filtered by course, section, or component.  
+- **Update Student Data** – Edit student details including name, roll number, and associated subjects/sections.  
+- **Delete Student Records** – Securely remove students from the system with backend validation and confirmation prompts.  
+- **Bulk Sync** *(optional future enhancement)* – CSV upload or batch API sync for onboarding large groups.
+
+**Endpoints:**
+- `GET /api/students?course=...&section=...&component=...`
+- `PUT /api/students/:id` – Update student data  
+- `DELETE /api/students/:id` – Delete student  
+---
+
 ## ⚙️ Tech Stack & Key Packages
 ### Client
 - React Native (Expo), TypeScript
 - expo-camera, expo-image, expo-router
 - @react-native-async-storage/async-storage
 - axios
-- @tensorflow/tfjs (initialized, but processing is intentionally server-side)
+- @tensorflow/tfjs
 
 ### Server
 - Node.js, Express, TypeScript
