@@ -4,7 +4,6 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getTimetableApi, TimetableDay } from '@/api/timetable';
 import Dropdown from '@/components/Dropdown';
 import { registerStudentApi } from '@/api/students';
-import { preloadFaceModels } from '@/utils/face-utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
@@ -30,9 +29,6 @@ export default function StudentRegistrationScreen() {
     const load = async () => {
       try {
         setLoading(true);
-        
-        // Preload face models for better performance
-        await preloadFaceModels();
         
         const userRaw = await AsyncStorage.getItem('user');
         if (!userRaw) return;

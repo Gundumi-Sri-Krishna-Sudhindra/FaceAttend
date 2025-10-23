@@ -14,7 +14,6 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useKiosk } from '../contexts/KioskContext';
 import { PasswordModal } from './PasswordModal';
 import { markAttendanceApi, MarkAttendanceInput } from '@/api/attendance';
-import { extractSingleFaceDescriptorAsync } from '@/utils/face-utils';
 
 type LiveAttendanceProps = {
   sessionId: string;
@@ -130,22 +129,8 @@ export default function LiveAttendance({
         setLastProcessedImage(imageHash);
         
         // Process face descriptor
-        let faceDescriptor: number[] | null = null;
-        try {
-          
-          faceDescriptor = await extractSingleFaceDescriptorAsync(photo.base64);
-          
-          if (faceDescriptor) {
-            
-          } else {
-            
-          }
-        } catch (faceError: any) {
-          setIsProcessing(false);
-          return;
-        }
-        
-        // Since we're now using server-side processing, we'll always send the image
+        // All face recognition is handled by the Python FaceNet microservice
+        // We'll send the image directly for server-side processing
         
         // Mark attendance with image data for server-side processing
         const markData: MarkAttendanceInput = {
