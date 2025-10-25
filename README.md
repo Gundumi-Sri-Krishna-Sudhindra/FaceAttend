@@ -21,14 +21,18 @@ FaceAttend is designed specifically for faculty to take classroom attendance usi
 - Real-time live camera detection with 0.5s capture loop (silent)
 - Student enrollment with face capture and subject/section association
 - Faculty dashboard with current-session detection and one-tap "Take Attendance"
-- Timetable setup and editing (supports hours 1–12+)
-- Attendance sessions and detailed reports
+- Timetable setup and editing (supports hours 1–24)
+- Attendance sessions and detailed reports with location tracking
 - Secure kiosk mode for dedicated devices (Android orientation lock, UI blocking, back button handling)
 - JWT authentication and protected APIs
-- Settings & Profile Management: Camera permissions, faculty profile updates, password management
+- Settings & Profile Management: Camera and location permissions, faculty profile updates, password management
 - Advanced Student Management: View, edit, and delete student records with comprehensive filtering and export capabilities
-- Export Functionality: PDF and CSV export for student lists and attendance reports
+- Export Functionality: PDF and CSV export for student lists and attendance reports with location data
 - Duplicate Prevention: Automatic validation for duplicate roll numbers and face descriptors within classes
+- Location Tracking: GPS location capture and display for attendance sessions
+- Student Attendance Analytics: Individual student attendance percentages and session tracking
+- Attendance Status Management: Dashboard acknowledgment of taken attendance with retake functionality
+- Flexible Time Management: Support for 24-hour time slots and empty timetable handling
 
 ## 🏗️ Architecture
 ### Client (React Native / Expo)
@@ -190,6 +194,50 @@ Comprehensive tools to manage student data efficiently with advanced filtering, 
 - **PDF Reports** – Professional student lists with class information and formatted tables
 - **CSV Data** – Structured data for analysis with class metadata and student details
 - **File Naming** – Automatic naming with subject, section, and date information
+
+## 📍 Location Tracking & Analytics
+
+### Location Tracking System
+FaceAttend now includes comprehensive location tracking for attendance sessions, providing accountability and detailed reporting.
+
+**Core Features:**
+- **Automatic GPS Capture** – Location is automatically captured when starting attendance sessions
+- **Address Resolution** – GPS coordinates are reverse-geocoded to human-readable addresses
+- **Permission Management** – Location permissions managed through settings alongside camera permissions
+- **Fallback Handling** – Graceful handling when location permission is denied or unavailable
+
+**Location Data Storage:**
+- **Coordinates** – Latitude and longitude with accuracy information
+- **Address** – Human-readable address from reverse geocoding
+- **Session Association** – Location data linked to specific attendance sessions
+- **Export Integration** – Location data included in all reports and exports
+
+**Display Integration:**
+- **Dashboard** – Current session shows location when attendance has been taken
+- **Reports** – Location displayed in attendance reports with 📍 icon
+- **Session Details** – Location information in detailed session views
+- **Export Data** – Location included in CSV and PDF exports
+
+### Student Attendance Analytics
+Advanced analytics system for tracking individual student attendance patterns and performance.
+
+**Analytics Features:**
+- **Individual Tracking** – Per-student attendance percentages and session counts
+- **Class Overview** – Attendance statistics for specific subject-section combinations
+- **Session History** – Complete attendance history with dates and locations
+- **Performance Metrics** – Present/absent session counts and percentage calculations
+
+**Display Features:**
+- **Color-Coded Indicators** – Green (≥80%), Amber (≥60%), Red (<60%) attendance percentages
+- **Session Details** – Shows present/total sessions for each student
+- **Last Attendance** – Displays when student was last marked present
+- **Export Integration** – Analytics data included in student export reports
+
+**API Endpoints:**
+- `GET /api/attendance/student-data` – Get comprehensive student attendance analytics
+- `GET /api/attendance/status` – Check attendance status with location data
+- **Response Format** – Includes attendance percentages, session counts, and location information
+
 ---
 
 ## ⚙️ Tech Stack & Key Packages
@@ -237,6 +285,7 @@ Comprehensive tools to manage student data efficiently with advanced filtering, 
 - expo-sharing ~14.0.7 (file sharing)
 - expo-web-browser ~15.0.7 (in-app browser)
 - expo-linking ~8.0.8 (deep linking)
+- expo-location ~18.0.0 (GPS location tracking)
 
 **Development Dependencies:**
 - @types/papaparse ^5.3.16 (TypeScript types)
@@ -352,6 +401,12 @@ const SessionSchema = new Schema({
   facultyId,
   subject, section, sessionType, hours, date,
   totalStudents, presentStudents, absentStudents,
+  location: {
+    latitude: Number,
+    longitude: Number,
+    address: String,
+    accuracy: Number
+  },
   records: [{
     studentId, studentName, rollNumber,
     isPresent, markedAt, confidence
@@ -375,10 +430,12 @@ const SessionSchema = new Schema({
 - DELETE `/api/students/:id` - Delete student record
 
 ### Attendance System
-- POST `/api/attendance/start` - Start attendance session
+- POST `/api/attendance/start` - Start attendance session (with location data)
 - POST `/api/attendance/mark` - Mark attendance (face recognition)
 - GET `/api/attendance/session/:id` - Get session details
-- GET `/api/attendance/reports` - Get attendance reports
+- GET `/api/attendance/reports` - Get attendance reports (with location data)
+- GET `/api/attendance/status` - Check if attendance has been taken for today's session
+- GET `/api/attendance/student-data` - Get student attendance data for analytics
 
 ### Timetable Management
 - GET `/api/timetable/:facultyId` - Get faculty timetable
@@ -524,6 +581,16 @@ chmod +x setup-device-owner.sh
 - ✅ **Enhanced UI/UX** - Improved student editing with visual indicators and optional field updates
 - ✅ **Live Attendance Improvements** - Student ID display during attendance marking
 - ✅ **Professional Export** - Formatted PDF reports and structured CSV data with file sharing
+- ✅ **Attendance Status Tracking** - Dashboard shows "Attendance Taken" with stats and retake functionality
+- ✅ **Location Tracking** - GPS location capture and display for attendance sessions
+- ✅ **Student Attendance Analytics** - Individual student attendance percentages and session tracking
+- ✅ **Enhanced Settings** - Location permission management alongside camera permissions
+- ✅ **Flexible Time Slots** - Extended support for 24-hour time slots (1-24 hours)
+- ✅ **Empty Timetable Handling** - Better UX for empty timetables and no students registered scenarios
+- ✅ **Rate Limiting Improvements** - Reduced cooldown periods for better user experience
+- ✅ **Duplicate Marking Prevention** - Fixed issue where stopping/restarting detection would re-mark students
+- ✅ **Attendance Reports Enhancement** - Location display in reports with improved styling
+- ✅ **Session Details Modal** - Redesigned with back button navigation and centered titles
 
 ## 📈 Future Enhancements
 - On-device face quality checks and liveness hints

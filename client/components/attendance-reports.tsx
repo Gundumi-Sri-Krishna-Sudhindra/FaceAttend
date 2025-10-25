@@ -369,13 +369,14 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Session Details</Text>
             <Pressable 
               onPress={() => setShowDetailsModal(false)} 
-              style={styles.modalCloseButton}
+              style={styles.modalBackButton}
             >
-              <Text style={styles.modalCloseButtonText}>✕</Text>
+              <Text style={styles.modalBackButtonText}>← Back</Text>
             </Pressable>
+            <Text style={styles.modalTitle}>Session Details</Text>
+            <View style={styles.modalHeaderSpacer} />
           </View>
           {/* Export button moved into details card (top-right) */}
 
@@ -644,7 +645,7 @@ const styles = StyleSheet.create({
   },
   sessionLocation: {
     fontSize: 12,
-    color: '#10B981',
+    color: '#111827',
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -682,6 +683,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  modalBackButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  modalBackButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  modalHeaderSpacer: {
+    width: 80, // Same width as back button to center the title
   },
   exportIconBtn: {
     position: 'absolute',
