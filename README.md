@@ -26,7 +26,9 @@ FaceAttend is designed specifically for faculty to take classroom attendance usi
 - Secure kiosk mode for dedicated devices (Android orientation lock, UI blocking, back button handling)
 - JWT authentication and protected APIs
 - Settings & Profile Management: Camera permissions, faculty profile updates, password management
-- Student Management: View, edit, and delete student records with real-time filtering
+- Advanced Student Management: View, edit, and delete student records with comprehensive filtering and export capabilities
+- Export Functionality: PDF and CSV export for student lists and attendance reports
+- Duplicate Prevention: Automatic validation for duplicate roll numbers and face descriptors within classes
 
 ## 🏗️ Architecture
 ### Client (React Native / Expo)
@@ -35,12 +37,16 @@ client/
 ├── app/                       # Routing and screens
 │   ├── index.tsx              # Welcome/login
 │   ├── take-attendance.tsx    # Attendance capture screen
-│   └── student-registration.tsx
+│   ├── student-registration.tsx
+│   └── manage-students.tsx    # Student management with export
 ├── components/
 │   ├── dashboard.tsx          # Faculty dashboard (current session)
 │   ├── live-attendance.tsx    # Live detection UI (status banners)
 │   ├── camera-view.tsx        # Silent 0.5s capture loop
 │   ├── hour-select-modal.tsx  # Hour picker
+│   ├── edit-student-modal.tsx # Student editing with face recapture
+│   ├── student-details-modal.tsx # Student list with export functionality
+│   ├── face-capture-modal.tsx # Auto-capture camera interface
 │   └── styles/
 ├── api/                       # Axios-based API clients
 ├── contexts/                  # Kiosk context
@@ -158,18 +164,32 @@ A dedicated section within the app for faculty and administrators to manage app-
 - **Device Settings (Kiosk Mode)** – Optional device lock, orientation lock, and inactivity timeout to prevent misuse in kiosk environments.
 
 ### Student Management
-Integrated tools to manage student data efficiently from the faculty dashboard or settings panel.
+Comprehensive tools to manage student data efficiently with advanced filtering, editing, and export capabilities.
 
-**Capabilities:**
-- **Fetch All Students** – Retrieve students dynamically filtered by course, section, or component.  
-- **Update Student Data** – Edit student details including name, roll number, and associated subjects/sections.  
-- **Delete Student Records** – Securely remove students from the system with backend validation and confirmation prompts.  
-- **Bulk Sync** *(optional future enhancement)* – CSV upload or batch API sync for onboarding large groups.
+**Core Capabilities:**
+- **Advanced Filtering** – Retrieve students by subject, section, and session type with real-time filtering
+- **Student Details View** – Comprehensive modal showing all student information with edit capabilities
+- **Inline Editing** – Edit student name, roll number, and face data directly from the student list
+- **Face Recapture** – 5-second auto-capture system for updating student face data
+- **Export Functionality** – Generate PDF and CSV reports of student lists with professional formatting
+- **Duplicate Prevention** – Automatic validation to prevent duplicate roll numbers and face descriptors within the same class
 
-**Endpoints:**
-- `GET /api/students?course=...&section=...&component=...`
-- `PUT /api/students/:id` – Update student data  
-- `DELETE /api/students/:id` – Delete student  
+**Enhanced Features:**
+- **Visual Indicators** – Clear feedback for modified fields during editing
+- **Optional Fields** – Flexible editing where faculty can update any combination of name, roll number, or face data
+- **Professional Export** – PDF reports with proper formatting and CSV files with structured data
+- **File Sharing** – Direct sharing of exported files via email, cloud storage, or other apps
+
+**API Endpoints:**
+- `GET /api/students?subject=...&section=...` – Get students by class
+- `PUT /api/students/:id` – Update student data with duplicate validation
+- `DELETE /api/students/:id` – Delete student with confirmation
+- **Validation** – Server-side checks for duplicate roll numbers and face descriptors within the same subject-section-component
+
+**Export Formats:**
+- **PDF Reports** – Professional student lists with class information and formatted tables
+- **CSV Data** – Structured data for analysis with class metadata and student details
+- **File Naming** – Automatic naming with subject, section, and date information
 ---
 
 ## ⚙️ Tech Stack & Key Packages
@@ -292,9 +312,9 @@ Integrated tools to manage student data efficiently from the faculty dashboard o
 5) Live Attendance
 - `live-attendance.tsx` runs a silent frame capture every 0.5–3s and sends base64 frames to `POST /api/attendance/mark`.
 - Server requests embedding from Python, matches by cosine similarity vs enrolled students; threshold defaults to 0.6.
-- UI shows banners near the Start/Pause button:
-  - Green: attendance marked
-  - Yellow: already marked
+- UI shows banners near the Start/Pause button with student ID display:
+  - Green: "✅ [Student Name] (ID: [Roll Number]) marked present!"
+  - Yellow: "⚠️ [Student Name] (ID: [Roll Number]) already marked"
   - Red: not found/error
 
 6) Reports
@@ -349,8 +369,9 @@ const SessionSchema = new Schema({
 - GET `/api/auth/faculty-subjects` - Get faculty subjects/sections
 
 ### Student Management
-- POST `/api/students/register` - Register student with face image
+- POST `/api/students/register` - Register student with face image (includes duplicate validation)
 - GET `/api/students?subject=...&section=...` - Get students by class
+- PUT `/api/students/:id` - Update student data (name, roll number, face data)
 - DELETE `/api/students/:id` - Delete student record
 
 ### Attendance System
@@ -496,11 +517,19 @@ chmod +x setup-device-owner.sh
 - JWT auth, password hashing (bcryptjs), protected routes
 - Helmet, CORS
 
-## 📈 Roadmap / Future Enhancements
+## 📈 Recent Enhancements
+- ✅ **Student Management Overhaul** - Complete redesign with advanced filtering and export capabilities
+- ✅ **Export Functionality** - PDF and CSV export for student lists and attendance reports
+- ✅ **Duplicate Prevention** - Automatic validation for roll numbers and face descriptors within classes
+- ✅ **Enhanced UI/UX** - Improved student editing with visual indicators and optional field updates
+- ✅ **Live Attendance Improvements** - Student ID display during attendance marking
+- ✅ **Professional Export** - Formatted PDF reports and structured CSV data with file sharing
+
+## 📈 Future Enhancements
 - On-device face quality checks and liveness hints
 - Batch enrollment quality scoring
 - Role-based access for admins
-- Export reports (CSV/PDF)
+- Advanced analytics and reporting
 
 ## 📝 License
 MIT License - see [LICENSE](LICENSE).

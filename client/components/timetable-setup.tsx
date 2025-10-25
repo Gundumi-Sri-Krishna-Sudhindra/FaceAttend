@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { styles } from './styles/timetable-setup-styles';
+import { TIME_SLOTS, SESSION_TYPES, getTimeRange, getSessionDuration, validateConsecutiveHours } from '@/utils/timeSlots';
 
 type Session = {
   subject: string;
@@ -23,29 +24,11 @@ type TimetableSetupProps = {
 };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const SESSION_TYPES = ['Lecture', 'Tutorial', 'Practical', 'Skill'] as const;
 
 // Common section patterns (numbers only)
 const COMMON_SECTIONS = [
   '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
   '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'
-];
-
-
-// College time slots (11 working hours)
-const TIME_SLOTS = [
-  { hour: 1, time: '7:10 - 8:00', duration: '50 mins' },
-  { hour: 2, time: '8:00 - 8:50', duration: '50 mins' },
-  { hour: 3, time: '9:20 - 10:10', duration: '50 mins' },
-  { hour: 4, time: '10:10 - 11:00', duration: '50 mins' },
-  { hour: 5, time: '11:10 - 12:00', duration: '50 mins' },
-  { hour: 6, time: '12:00 - 12:50', duration: '50 mins' },
-  { hour: 7, time: '12:55 - 1:45', duration: '50 mins' },
-  { hour: 8, time: '1:50 - 2:40', duration: '50 mins' },
-  { hour: 9, time: '2:40 - 3:30', duration: '50 mins' },
-  { hour: 10, time: '3:50 - 4:40', duration: '50 mins' },
-  { hour: 11, time: '4:40 - 5:30', duration: '50 mins' },
-  { hour: 12, time: '5:30 - 6:20', duration: '50 mins' },
 ];
 
 export default function TimetableSetup({ existingTimetable, onSubmit, onSkip, isSubmitting = false }: TimetableSetupProps) {
@@ -157,26 +140,25 @@ export default function TimetableSetup({ existingTimetable, onSubmit, onSkip, is
 
   const handleSubmit = async () => {
     try {
-      // Basic validation
-      const hasSessions = timetable.some(day => day.sessions.length > 0);
-      if (!hasSessions) {
-        Alert.alert('No Sessions', 'Please add at least one session to your timetable.');
-        return;
-      }
+      // Allow empty timetables - no need to validate for sessions
+      // Users can clear their entire timetable if needed
 
-      // Validate all required fields
+      // Validate all required fields only for sessions that exist
       let hasEmptyFields = false;
       let dayWithError = '';
       let sessionNumber = 0;
 
       for (const day of timetable) {
-        for (let i = 0; i < day.sessions.length; i++) {
-          const session = day.sessions[i];
-          if (!session?.subject?.trim() || !session?.section?.trim() || !session?.roomNumber?.trim() || !session?.hours?.length) {
-            hasEmptyFields = true;
-            dayWithError = day.day;
-            sessionNumber = i + 1;
-            break;
+        // Only validate if there are sessions
+        if (day.sessions && day.sessions.length > 0) {
+          for (let i = 0; i < day.sessions.length; i++) {
+            const session = day.sessions[i];
+            if (!session?.subject?.trim() || !session?.section?.trim() || !session?.roomNumber?.trim() || !session?.hours?.length) {
+              hasEmptyFields = true;
+              dayWithError = day.day;
+              sessionNumber = i + 1;
+              break;
+            }
           }
         }
         if (hasEmptyFields) break;
@@ -190,8 +172,9 @@ export default function TimetableSetup({ existingTimetable, onSubmit, onSkip, is
         return;
       }
 
-      // Validate consecutive hours
+      // Validate consecutive hours only for sessions that exist
       const hasInvalidHours = timetable.some(day => 
+        day.sessions && day.sessions.length > 0 && 
         day.sessions.some(session => !validateConsecutiveHours(session.hours))
       );
       if (hasInvalidHours) {

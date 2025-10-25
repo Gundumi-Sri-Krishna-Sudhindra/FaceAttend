@@ -13,7 +13,8 @@ export async function updateTimetable(req: Request, res: Response): Promise<void
 
     // Validate timetable structure
     for (const day of timetable) {
-      if (!day.sessions) continue;
+      // Skip validation if no sessions exist (allows empty timetable)
+      if (!day.sessions || day.sessions.length === 0) continue;
       
       for (const session of day.sessions) {
         if (!session.subject?.trim()) {
@@ -43,6 +44,27 @@ export async function updateTimetable(req: Request, res: Response): Promise<void
             field: 'hours'
           });
           return;
+        }
+        
+        // Validate hour range and consecutive hours
+        if (!session.hours.every(hour => hour >= 1 && hour <= 12)) {
+          res.status(400).json({ 
+            message: `Invalid hour range for ${session.subject} on ${day.day}. Hours must be between 1-12`,
+            field: 'hours'
+          });
+          return;
+        }
+        
+        // Validate consecutive hours
+        const sortedHours = [...session.hours].sort((a, b) => a - b);
+        for (let i = 1; i < sortedHours.length; i++) {
+          if (sortedHours[i] - sortedHours[i - 1] !== 1) {
+            res.status(400).json({ 
+              message: `Hours must be consecutive for ${session.subject} on ${day.day}`,
+              field: 'hours'
+            });
+            return;
+          }
         }
       }
     }

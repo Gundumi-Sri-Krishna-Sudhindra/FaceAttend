@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { styles } from './styles/timetable-view-styles';
+import { TIME_SLOTS, getTimeRange, getSessionDuration } from '@/utils/timeSlots';
 
 type Session = {
   subject: string;
@@ -22,38 +23,8 @@ type TimetableViewProps = {
   onBack?: () => void;
 };
 
-// College time slots (11 working hours)
-const TIME_SLOTS = [
-  { hour: 1, time: '7:10 - 8:00' },
-  { hour: 2, time: '8:00 - 8:50' },
-  { hour: 3, time: '9:20 - 10:10' },
-  { hour: 4, time: '10:10 - 11:00' },
-  { hour: 5, time: '11:10 - 12:00' },
-  { hour: 6, time: '12:00 - 12:50' },
-  { hour: 7, time: '12:55 - 1:45' },
-  { hour: 8, time: '1:50 - 2:40' },
-  { hour: 9, time: '2:40 - 3:30' },
-  { hour: 10, time: '3:50 - 4:40' },
-  { hour: 11, time: '4:40 - 5:30' },
-];
 
 export default function TimetableView({ timetable, onEdit, onAdd, onBack }: TimetableViewProps) {
-  const getTimeRange = (hours: number[]) => {
-    if (hours.length === 0) return '';
-    const sorted = [...hours].sort((a, b) => a - b);
-    const startSlot = TIME_SLOTS.find(slot => slot.hour === sorted[0]);
-    const endSlot = TIME_SLOTS.find(slot => slot.hour === sorted[sorted.length - 1]);
-    if (startSlot && endSlot) {
-      return `${startSlot.time.split(' - ')[0]} - ${endSlot.time.split(' - ')[1]}`;
-    }
-    return '';
-  };
-
-  const getSessionDuration = (hours: number[]) => {
-    if (hours.length === 1) return '1 hour';
-    if (hours.length === 2) return '2 hours';
-    return `${hours.length} hours`;
-  };
 
   // More robust check for empty timetable
   const hasTimetable = () => {
