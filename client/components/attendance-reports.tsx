@@ -32,7 +32,7 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
   // Helpers: Export
   const buildCsv = (session: any) => {
     const headerSection = [[
-      'Subject','Section','Type','Date','Hours','Present','Absent','Total','Attendance %'
+      'Subject','Section','Type','Date','Hours','Present','Absent','Total','Attendance %','Location'
     ], [
       session.subject,
       session.section,
@@ -42,7 +42,13 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
       session.presentStudents,
       session.absentStudents,
       session.totalStudents,
-      session.attendancePercentage
+      session.attendancePercentage,
+      session.location ? (session.location.address || 
+        (session.location.latitude && session.location.longitude 
+          ? `${session.location.latitude}, ${session.location.longitude}`
+          : 'Location unavailable'
+        )
+      ) : 'N/A'
     ]];
     const presentHeader = [['Present Students']];
     const presentRows = [['Name','Roll','Marked At','Confidence'], ...(
@@ -159,6 +165,12 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
             <div><strong>Date:</strong> ${fmt(session.date)}</div>
             <div><strong>Hours:</strong> ${(session.hours || []).join(', ')}</div>
             <div><strong>Summary:</strong> <span class="pill">${session.presentStudents}/${session.totalStudents} present</span></div>
+            ${session.location ? `<div><strong>Location:</strong> 📍 ${session.location.address || 
+              (session.location.latitude && session.location.longitude 
+                ? `${session.location.latitude}, ${session.location.longitude}`
+                : 'Location unavailable'
+              )
+            }</div>` : ''}
           </div>
           <h2>Present Students</h2>
           <table>
@@ -317,6 +329,15 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
                 <Text style={styles.sessionDate}>
                   {formatDate(session.date)}
                 </Text>
+                {session.location && (
+                  <Text style={styles.sessionLocation}>
+                    {session.location.address || 
+                      (session.location.latitude && session.location.longitude 
+                        ? `${session.location.latitude.toFixed(4)}, ${session.location.longitude.toFixed(4)}`
+                        : 'Location unavailable'
+                      )} 📍
+                  </Text>
+                )}
               </View>
               
               <View style={styles.statsRow}>
@@ -380,6 +401,15 @@ export default function AttendanceReports({ onClose }: AttendanceReportsProps) {
                 <Text style={styles.sessionInfoText}>
                   Date: {formatDate(selectedSession.date)}
                 </Text>
+                {selectedSession.location && (
+                  <Text style={styles.sessionInfoText}>
+                    {selectedSession.location.address || 
+                      (selectedSession.location.latitude && selectedSession.location.longitude 
+                        ? `${selectedSession.location.latitude.toFixed(4)}, ${selectedSession.location.longitude.toFixed(4)}`
+                        : 'Location unavailable'
+                      )} 📍
+                  </Text>
+                )}
                 <View style={styles.sessionStats}>
                   <View style={styles.sessionStatItem}>
                     <Text style={styles.sessionStatNumber}>{selectedSession.presentStudents}</Text>
@@ -611,6 +641,12 @@ const styles = StyleSheet.create({
   sessionDate: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  sessionLocation: {
+    fontSize: 12,
+    color: '#10B981',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   statsRow: {
     flexDirection: 'row',

@@ -20,6 +20,12 @@ export interface AttendanceSession {
   totalStudents: number;
   presentStudents: number;
   absentStudents: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+    accuracy?: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +56,12 @@ const AttendanceSessionSchema = new Schema<AttendanceSessionDocument>({
   totalStudents: { type: Number, default: 0 },
   presentStudents: { type: Number, default: 0 },
   absentStudents: { type: Number, default: 0 },
+  location: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+    address: { type: String },
+    accuracy: { type: Number }
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true });

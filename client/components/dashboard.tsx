@@ -188,6 +188,15 @@ export default function Dashboard({
                     <Text style={styles.detailText}>Section: {currentSession.section}</Text>
                     <Text style={styles.detailText}>Room: {currentSession.roomNumber}</Text>
                     <Text style={styles.detailText}>Time: {currentSession.timeSlot}</Text>
+                    {attendanceStatus?.location && (
+                      <Text style={styles.detailText}>
+                        {attendanceStatus.location.address || 
+                          (attendanceStatus.location.latitude && attendanceStatus.location.longitude 
+                            ? `${attendanceStatus.location.latitude.toFixed(4)}, ${attendanceStatus.location.longitude.toFixed(4)}`
+                            : 'Location unavailable'
+                          )} 📍
+                      </Text>
+                    )}
                   </View>
                   {(() => {
                     if (hasRegisteredStudents === false) {

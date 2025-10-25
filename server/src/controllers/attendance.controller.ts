@@ -78,7 +78,7 @@ async function findMatchingStudent(
 export async function startAttendanceSession(req: Request, res: Response): Promise<void> {
   try {
     const facultyId = req.userId;
-    const { subject, section, sessionType, hours } = req.body;
+    const { subject, section, sessionType, hours, location } = req.body;
     
     if (!facultyId || !mongoose.isValidObjectId(facultyId)) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -159,6 +159,12 @@ export async function startAttendanceSession(req: Request, res: Response): Promi
       totalStudents: enrolledStudents.length,
       presentStudents: 0,
       absentStudents: enrolledStudents.length,
+      location: location ? {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: location.address,
+        accuracy: location.accuracy
+      } : undefined,
       records: enrolledStudents.map(student => ({
         studentId: student._id,
         studentName: student.name,
@@ -424,6 +430,12 @@ export async function checkAttendanceStatus(req: Request, res: Response): Promis
         totalStudents: existingSession.totalStudents,
         presentStudents: existingSession.presentStudents,
         absentStudents: existingSession.absentStudents,
+        location: existingSession.location ? {
+          latitude: existingSession.location.latitude,
+          longitude: existingSession.location.longitude,
+          address: existingSession.location.address,
+          accuracy: existingSession.location.accuracy
+        } : null,
         createdAt: existingSession.createdAt,
         updatedAt: existingSession.updatedAt
       });
@@ -661,6 +673,12 @@ export async function getAttendanceReports(req: Request, res: Response): Promise
           attendancePercentage: session.totalStudents > 0 
             ? Math.round((session.presentStudents / session.totalStudents) * 100) 
             : 0,
+          location: session.location ? {
+            latitude: session.location.latitude,
+            longitude: session.location.longitude,
+            address: session.location.address,
+            accuracy: session.location.accuracy
+          } : null,
           createdAt: session.createdAt,
           // Detailed student lists
           presentStudentsList: presentStudents,

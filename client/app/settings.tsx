@@ -2,9 +2,38 @@ import React, { useMemo } from 'react';
 import { SafeAreaView, View, Text, Pressable, ScrollView, Switch, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { useCameraPermissions } from 'expo-camera';
+import * as Location from 'expo-location';
 
 export default function SettingsScreen() {
   const [permission, requestPermission] = useCameraPermissions();
+  const [locationPermission, setLocationPermission] = React.useState<Location.LocationPermissionResponse | null>(null);
+
+  // Check location permission on component mount
+  React.useEffect(() => {
+    const checkLocationPermission = async () => {
+      try {
+        const permission = await Location.getForegroundPermissionsAsync();
+        setLocationPermission(permission);
+      } catch (error) {
+        console.error('Error checking location permission:', error);
+      }
+    };
+    checkLocationPermission();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(permission);
+      if (!permission.granted) {
+        Alert.alert('Permission Denied', 'Location access is required for attendance tracking. You can enable it in App Settings.');
+      }
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+      Alert.alert('Error', 'Failed to request location permission.');
+    }
+  };
+
   const onLogout = async () => {
     try {
       // Clear token and any user session if needed
@@ -86,6 +115,35 @@ export default function SettingsScreen() {
                   Alert.alert(
                     'Manage Permission',
                     'To revoke camera permission, open your system App Settings.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Open Settings', onPress: () => { try { Linking.openSettings(); } catch {} } },
+                    ]
+                  );
+                }
+              }}
+            />
+          </View>
+        </View>
+
+        {/* Location Permission */}
+        <View style={{ backgroundColor: 'white', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>Location Permission</Text>
+              <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
+                {locationPermission?.granted ? 'Granted' : 'Not granted'}
+              </Text>
+            </View>
+            <Switch
+              value={!!locationPermission?.granted}
+              onValueChange={async (next) => {
+                if (next) {
+                  await requestLocationPermission();
+                } else {
+                  Alert.alert(
+                    'Manage Permission',
+                    'To revoke location permission, open your system App Settings.',
                     [
                       { text: 'Cancel', style: 'cancel' },
                       { text: 'Open Settings', onPress: () => { try { Linking.openSettings(); } catch {} } },

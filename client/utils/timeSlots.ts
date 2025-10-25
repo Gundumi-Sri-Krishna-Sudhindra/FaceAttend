@@ -31,7 +31,7 @@ export const TIME_SLOTS: TimeSlot[] = [
   // { hour: 17, time: '9:30 - 10:20', startMinutes: 21 * 60 + 30, endMinutes: 22 * 60 + 20, duration: '50 mins' },
   // { hour: 18, time: '10:30 - 11:20', startMinutes: 22 * 60 + 30, endMinutes: 23 * 60 + 20, duration: '50 mins' },
   // { hour: 19, time: '11:30 - 12:20', startMinutes: 23 * 60 + 30, endMinutes: 24 * 60 + 20, duration: '50 mins' },
-  // { hour: 20, time: '1:00 - 1:50', startMinutes: 1 * 60 + 0, endMinutes: 1 * 60 + 50, duration: '50 mins' },
+  { hour: 20, time: '1:00 - 1:50', startMinutes: 1 * 60 + 0, endMinutes: 1 * 60 + 50, duration: '50 mins' },
   // { hour: 21, time: '2:00 - 2:50', startMinutes: 2 * 60 + 0, endMinutes: 2 * 60 + 50, duration: '50 mins' },
   // { hour: 22, time: '3:00 - 3:50', startMinutes: 3 * 60 + 0, endMinutes: 3 * 60 + 50, duration: '50 mins' },
   // { hour: 23, time: '4:00 - 4:50', startMinutes: 4 * 60 + 0, endMinutes: 4 * 60 + 50, duration: '50 mins' },

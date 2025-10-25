@@ -4,6 +4,7 @@ import { View, Text, Alert, ActivityIndicator } from 'react-native';
 import LiveAttendance from '../components/live-attendance';
 import { startAttendanceSessionApi } from '@/api/attendance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 
 const TakeAttendancePage = () => {
   const params = useLocalSearchParams<{ subject: string; hours: string; section: string; sessionType: string }>();
@@ -32,12 +33,48 @@ const TakeAttendancePage = () => {
         
         const user = JSON.parse(userRaw);
         
+        // Get current location
+        let locationData = undefined;
+        try {
+          const { status } = await Location.getForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const location = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            
+            // Get address from coordinates
+            const addressResponse = await Location.reverseGeocodeAsync({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            });
+            
+            const address = addressResponse[0];
+            const addressString = [
+              address?.street,
+              address?.city,
+              address?.region,
+              address?.country
+            ].filter(Boolean).join(', ');
+            
+            locationData = {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              address: addressString,
+              accuracy: location.coords.accuracy || undefined
+            };
+          }
+        } catch (locationError) {
+          console.warn('Failed to get location:', locationError);
+          // Continue without location data
+        }
+        
         // Start attendance session
         const result = await startAttendanceSessionApi({
           subject: params.subject || '',
           section: params.section || '',
           sessionType: (params.sessionType as any) || 'Lecture',
-          hours: hours
+          hours: hours,
+          location: locationData
         });
         
         setSessionId(result.sessionId);

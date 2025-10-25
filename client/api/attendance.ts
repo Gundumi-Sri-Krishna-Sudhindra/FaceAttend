@@ -5,6 +5,12 @@ export type StartAttendanceSessionInput = {
   section: string;
   sessionType: 'Lecture' | 'Tutorial' | 'Practical' | 'Skill';
   hours: number[];
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+    accuracy?: number;
+  };
 };
 
 export type StartAttendanceSessionResponse = {
@@ -89,6 +95,12 @@ export type AttendanceStatusResponse = {
   totalStudents?: number;
   presentStudents?: number;
   absentStudents?: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+    accuracy?: number;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
 };
