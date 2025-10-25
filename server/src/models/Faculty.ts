@@ -32,7 +32,7 @@ const SessionSchema = new Schema<Session>({
   },
   section: { type: String, required: true, trim: true },
   roomNumber: { type: String, required: true, trim: true },
-  hours: [{ type: Number, required: true, min: 1, max: 20 }]
+  hours: [{ type: Number, required: true, min: 1, max: 24 }]
 });
 
 const TimetableDaySchema = new Schema<TimetableDay>({

@@ -9,7 +9,7 @@ export interface TimeSlot {
   duration?: string;
 }
 
-// College time slots (12 working hours)
+// Flexible time slots (supports 24 hours - add more as needed)
 export const TIME_SLOTS: TimeSlot[] = [
   { hour: 1, time: '7:10 - 8:00', startMinutes: 7 * 60 + 10, endMinutes: 8 * 60 + 0, duration: '50 mins' },
   { hour: 2, time: '8:00 - 8:50', startMinutes: 8 * 60 + 0, endMinutes: 8 * 60 + 50, duration: '50 mins' },
@@ -23,6 +23,19 @@ export const TIME_SLOTS: TimeSlot[] = [
   { hour: 10, time: '3:50 - 4:40', startMinutes: 15 * 60 + 50, endMinutes: 16 * 60 + 40, duration: '50 mins' },
   { hour: 11, time: '4:40 - 5:30', startMinutes: 16 * 60 + 40, endMinutes: 17 * 60 + 30, duration: '50 mins' },
   { hour: 12, time: '5:30 - 6:20', startMinutes: 17 * 60 + 30, endMinutes: 18 * 60 + 20, duration: '50 mins' },
+  { hour: 13, time: '12:00 - 12:50', startMinutes: 0 * 60 + 0, endMinutes: 0 * 60 + 50, duration: '50 mins' },
+  // Additional time slots - add more as needed for 24-hour flexibility
+  // { hour: 14, time: '6:30 - 7:20', startMinutes: 18 * 60 + 30, endMinutes: 19 * 60 + 20, duration: '50 mins' },
+  // { hour: 15, time: '7:30 - 8:20', startMinutes: 19 * 60 + 30, endMinutes: 20 * 60 + 20, duration: '50 mins' },
+  // { hour: 16, time: '8:30 - 9:20', startMinutes: 20 * 60 + 30, endMinutes: 21 * 60 + 20, duration: '50 mins' },
+  // { hour: 17, time: '9:30 - 10:20', startMinutes: 21 * 60 + 30, endMinutes: 22 * 60 + 20, duration: '50 mins' },
+  // { hour: 18, time: '10:30 - 11:20', startMinutes: 22 * 60 + 30, endMinutes: 23 * 60 + 20, duration: '50 mins' },
+  // { hour: 19, time: '11:30 - 12:20', startMinutes: 23 * 60 + 30, endMinutes: 24 * 60 + 20, duration: '50 mins' },
+  // { hour: 20, time: '1:00 - 1:50', startMinutes: 1 * 60 + 0, endMinutes: 1 * 60 + 50, duration: '50 mins' },
+  // { hour: 21, time: '2:00 - 2:50', startMinutes: 2 * 60 + 0, endMinutes: 2 * 60 + 50, duration: '50 mins' },
+  // { hour: 22, time: '3:00 - 3:50', startMinutes: 3 * 60 + 0, endMinutes: 3 * 60 + 50, duration: '50 mins' },
+  // { hour: 23, time: '4:00 - 4:50', startMinutes: 4 * 60 + 0, endMinutes: 4 * 60 + 50, duration: '50 mins' },
+  // { hour: 24, time: '5:00 - 5:50', startMinutes: 5 * 60 + 0, endMinutes: 5 * 60 + 50, duration: '50 mins' },
 ];
 
 // Days of the week

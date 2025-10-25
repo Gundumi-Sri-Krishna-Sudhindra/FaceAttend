@@ -84,6 +84,30 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  disabledButton: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.7,
+  },
+  refreshButton: {
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    minWidth: 32,
+    minHeight: 32,
+  },
+  refreshButtonPressed: {
+    backgroundColor: '#E5E7EB',
+  },
+  refreshButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '500',
+  },
   noSessionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
+import { useFocusEffect } from '@react-navigation/native';
 import { styles } from './styles/dashboard-styles';
 import { HourSelectModal } from './hour-select-modal';
 import AttendanceReports from './attendance-reports';
 import { TimetableDay as ApiTimetableDay, Session as ApiSession } from '@/api/timetable';
 import { TIME_SLOTS, getCurrentSession } from '@/utils/timeSlots';
+import { getStudentsApi } from '@/api/students';
 
 type User = {
   id: string;
@@ -46,22 +48,54 @@ export default function Dashboard({
 }: DashboardProps) {
   const [isHoursModalVisible, setHoursModalVisible] = useState(false);
   const [currentSession, setCurrentSession] = useState<any>(null);
+  const [hasRegisteredStudents, setHasRegisteredStudents] = useState<boolean | null>(null);
+  const [isCheckingStudents, setIsCheckingStudents] = useState(false);
+
+  // Check if students are registered for the current session
+  const checkRegisteredStudents = async (session: any) => {
+    if (!session) {
+      setHasRegisteredStudents(null);
+      return;
+    }
+
+    setIsCheckingStudents(true);
+    try {
+      const response = await getStudentsApi(session.subject, session.section);
+      setHasRegisteredStudents(response.students.length > 0);
+    } catch (error) {
+      console.error('Failed to check registered students:', error);
+      setHasRegisteredStudents(false);
+    } finally {
+      setIsCheckingStudents(false);
+    }
+  };
 
   // Update current session when timetable changes
   useEffect(() => {
     const session = getCurrentSession(timetable);
     setCurrentSession(session);
+    checkRegisteredStudents(session);
   }, [timetable]);
 
-  // Update current session every minute to handle time changes
+  // Update current session every 30 seconds to handle time changes and student updates
   useEffect(() => {
     const interval = setInterval(() => {
       const session = getCurrentSession(timetable);
       setCurrentSession(session);
-    }, 60000); // Check every minute
+      checkRegisteredStudents(session);
+    }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
   }, [timetable]);
+
+  // Check for students whenever dashboard comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentSession) {
+        checkRegisteredStudents(currentSession);
+      }
+    }, [currentSession])
+  );
   return (
     <View style={styles.container}>
       {/* Header with logo, app name, and logout */}
@@ -109,23 +143,55 @@ export default function Dashboard({
                     <View style={styles.sessionTypeBadge}>
                       <Text style={styles.sessionTypeText}>{currentSession.sessionType}</Text>
                     </View>
+                    {/* Refresh Button - Top Right */}
+                    <Pressable
+                      onPress={() => checkRegisteredStudents(currentSession)}
+                      style={({ pressed }) => [
+                        styles.refreshButton,
+                        pressed && styles.refreshButtonPressed
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Refresh student status"
+                    >
+                      <Text style={styles.refreshButtonText}>🔄</Text>
+                    </Pressable>
                   </View>
                   <View style={styles.sessionDetails}>
                     <Text style={styles.detailText}>Section: {currentSession.section}</Text>
                     <Text style={styles.detailText}>Room: {currentSession.roomNumber}</Text>
                     <Text style={styles.detailText}>Time: {currentSession.timeSlot}</Text>
                   </View>
-                  <Pressable
-                    onPress={() => setHoursModalVisible(true)}
-                    style={({ pressed }) => [
-                      styles.takeAttendanceButton,
-                      pressed && styles.takeAttendanceButtonPressed
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Take attendance for current session"
-                  >
-                    <Text style={styles.takeAttendanceButtonText}>Take Attendance</Text>
-                  </Pressable>
+                  {(() => {
+                    if (isCheckingStudents) {
+                      return (
+                        <View style={[styles.takeAttendanceButton, styles.disabledButton]}>
+                          <Text style={styles.takeAttendanceButtonText}>Checking students...</Text>
+                        </View>
+                      );
+                    }
+                    
+                    if (hasRegisteredStudents === false) {
+                      return (
+                        <View style={[styles.takeAttendanceButton, styles.disabledButton]}>
+                          <Text style={styles.takeAttendanceButtonText}>No Students Registered</Text>
+                        </View>
+                      );
+                    }
+                    
+                    return (
+                      <Pressable
+                        onPress={() => setHoursModalVisible(true)}
+                        style={({ pressed }) => [
+                          styles.takeAttendanceButton,
+                          pressed && styles.takeAttendanceButtonPressed
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="Take attendance for current session"
+                      >
+                        <Text style={styles.takeAttendanceButtonText}>Take Attendance</Text>
+                      </Pressable>
+                    );
+                  })()}
                 </View>
                 {isHoursModalVisible && (
                   <HourSelectModal

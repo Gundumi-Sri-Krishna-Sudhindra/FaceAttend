@@ -75,14 +75,35 @@ const TakeAttendancePage = () => {
   }
 
   if (error) {
+    // Check for different types of errors
+    const isNoStudentsError = error.includes('No students enrolled') || error.includes('No students registered');
+    const isRateLimitError = error.includes('Please wait before creating another session') || error.includes('429');
+    
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 20 }}>
-        <Text style={{ fontSize: 18, color: '#EF4444', textAlign: 'center', marginBottom: 16 }}>
-          Error: {error}
+        <Text style={{ fontSize: 18, color: isNoStudentsError ? '#6B7280' : isRateLimitError ? '#F59E0B' : '#EF4444', textAlign: 'center', marginBottom: 16 }}>
+          {isNoStudentsError ? 'No Students Registered' : 
+           isRateLimitError ? 'Please Wait' : 
+           `Error: ${error}`}
         </Text>
-        <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center' }}>
-          Please check your internet connection and try again.
+        <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', marginBottom: 20 }}>
+          {isNoStudentsError 
+            ? `No students are registered for ${params.subject} - Section ${params.section} - ${params.sessionType}`
+            : isRateLimitError
+            ? 'Please wait a moment before trying to start attendance again.'
+            : 'Please check your internet connection and try again.'
+          }
         </Text>
+        {isNoStudentsError && (
+          <Text style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center' }}>
+            Please register students for this course first.
+          </Text>
+        )}
+        {isRateLimitError && (
+          <Text style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center' }}>
+            This prevents creating duplicate sessions too quickly.
+          </Text>
+        )}
       </View>
     );
   }

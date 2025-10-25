@@ -212,18 +212,33 @@ export default function ManageStudentsScreen() {
           >
             <Text style={styles.modalTitle}>{modalData.title}</Text>
             <ScrollView style={styles.modalOptions} showsVerticalScrollIndicator={false}>
-              {modalData.options.map((option, index) => (
-                <Pressable
-                  key={`${activeDropdown}-${option}-${index}`}
-                  onPress={() => modalData.onSelect(option)}
-                  style={({ pressed }) => [
-                    styles.modalOption,
-                    pressed && styles.modalOptionPressed
-                  ]}
-                >
-                  <Text style={styles.modalOptionText}>{option}</Text>
-                </Pressable>
-              ))}
+              {modalData.options.length > 0 ? (
+                modalData.options.map((option, index) => (
+                  <Pressable
+                    key={`${activeDropdown}-${option}-${index}`}
+                    onPress={() => modalData.onSelect(option)}
+                    style={({ pressed }) => [
+                      styles.modalOption,
+                      pressed && styles.modalOptionPressed
+                    ]}
+                  >
+                    <Text style={styles.modalOptionText}>{option}</Text>
+                  </Pressable>
+                ))
+              ) : (
+                <View style={styles.emptyModalState}>
+                  <Text style={styles.emptyModalTitle}>
+                    {activeDropdown === 'subject' ? 'No Subjects Found' : 
+                     activeDropdown === 'section' ? 'No Sections Found' : 
+                     'No Session Types Found'}
+                  </Text>
+                  <Text style={styles.emptyModalSubtitle}>
+                    {activeDropdown === 'subject' ? 'Go to dashboard to setup timetable.' :
+                     activeDropdown === 'section' ? 'Please select a subject first to view available sections.' :
+                     'Please select a subject and section first to view session types.'}
+                  </Text>
+                </View>
+              )}
             </ScrollView>
             <Pressable
               onPress={closeDropdown}
@@ -617,5 +632,24 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Empty modal state styles
+  emptyModalState: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  emptyModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  emptyModalSubtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

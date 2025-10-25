@@ -47,9 +47,9 @@ export async function updateTimetable(req: Request, res: Response): Promise<void
         }
         
         // Validate hour range and consecutive hours
-        if (!session.hours.every(hour => hour >= 1 && hour <= 12)) {
+        if (!session.hours.every((hour: number) => hour >= 1 && hour <= 24)) {
           res.status(400).json({ 
-            message: `Invalid hour range for ${session.subject} on ${day.day}. Hours must be between 1-12`,
+            message: `Invalid hour range for ${session.subject} on ${day.day}. Hours must be between 1-24`,
             field: 'hours'
           });
           return;

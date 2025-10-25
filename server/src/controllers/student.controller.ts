@@ -251,7 +251,7 @@ export async function getStudents(req: Request, res: Response): Promise<void> {
         rollNumber: student.rollNumber,
         subject: subject,
         section: section,
-        sessionType: enrollment?.sessionType || 'Lecture', // Default to Lecture if not specified
+        sessionType: 'Lecture', // Default session type since it's not stored in enrollment
         createdAt: student.createdAt
       };
     });

@@ -10,7 +10,7 @@ const FACE_MATCH_THRESHOLD = 0.6;
 
 // Rate limiting for session creation
 const sessionCreationTimes = new Map<string, number>();
-const SESSION_CREATION_COOLDOWN = 5000; // 5 seconds
+const SESSION_CREATION_COOLDOWN = 1000; // 1 second
 
 // Calculate cosine similarity between two face descriptors
 function cosineSimilarity(a: number[], b: number[]): number {

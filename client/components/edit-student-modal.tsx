@@ -98,21 +98,9 @@ export default function EditStudentModal({
   const handleDelete = () => {
     if (!student) return;
     
-    Alert.alert(
-      'Delete Student',
-      `Are you sure you want to delete ${student.name}? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => {
-            onDelete(student.id, student.name);
-            onClose();
-          }
-        }
-      ]
-    );
+    // Call the parent's delete handler directly - it will show the confirmation
+    onDelete(student.id, student.name);
+    onClose();
   };
 
   const handleClose = () => {
