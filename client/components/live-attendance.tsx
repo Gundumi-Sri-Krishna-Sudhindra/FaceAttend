@@ -157,8 +157,8 @@ export default function LiveAttendance({
               
               // Show success feedback
               setStatusType('success');
-              setStatusMessage(`✅ ${result.student.name} marked present!`);
-              setRecentlyMarked(prev => [result.student.name, ...prev.slice(0, 4)]);
+              setStatusMessage(`✅ ${result.student.name} (ID: ${result.student.rollNumber}) marked present!`);
+              setRecentlyMarked(prev => [`${result.student.name} (${result.student.rollNumber})`, ...prev.slice(0, 4)]);
               onAttendanceMarked(result);
               
               // Clear success message after 2 seconds
@@ -174,7 +174,7 @@ export default function LiveAttendance({
             } else {
               // Show duplicate punch message
               setStatusType('duplicate');
-              setStatusMessage(`⚠️ ${result.student.name} already marked`);
+              setStatusMessage(`⚠️ ${result.student.name} (ID: ${result.student.rollNumber}) already marked`);
               setTimeout(() => {
                 setStatusMessage(null);
                 setStatusType(null);

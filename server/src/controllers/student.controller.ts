@@ -4,6 +4,25 @@ import { Student } from '../models/Student';
 import { Faculty } from '../models/Faculty';
 import { getFaceEmbedding } from '../services/facenet.service';
 
+// Calculate cosine similarity between two face descriptors
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  
+  if (normA === 0 || normB === 0) return 0;
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 export async function registerStudent(req: Request, res: Response): Promise<void> {
   console.log('=== STUDENT REGISTRATION REQUEST ===');
   console.log('Headers:', req.headers);
@@ -96,10 +115,65 @@ export async function registerStudent(req: Request, res: Response): Promise<void
       console.log('✅ Offering verified in timetable');
     }
 
+    // Check for duplicate roll number within the same subject-section-faculty
+    console.log('🔍 Checking for duplicate roll number in same class...');
+    const duplicateRollNumber = await Student.findOne({
+      rollNumber,
+      'enrollments.subject': subject,
+      'enrollments.section': section,
+      'enrollments.facultyId': new mongoose.Types.ObjectId(facultyId)
+    });
+
+    if (duplicateRollNumber) {
+      console.log('❌ Duplicate roll number found in same class');
+      res.status(400).json({ 
+        message: 'Roll number already exists in this class',
+        hint: `Student with roll number ${rollNumber} is already registered for ${subject} - Section ${section}`
+      });
+      return;
+    }
+
+    // Check for duplicate face descriptor within the same subject-section-faculty
+    console.log('🔍 Checking for duplicate face descriptor in same class...');
+    const duplicateFaceDescriptor = await Student.findOne({
+      'enrollments.subject': subject,
+      'enrollments.section': section,
+      'enrollments.facultyId': new mongoose.Types.ObjectId(facultyId),
+      $or: [
+        { faceDescriptor: { $exists: true, $ne: [] } },
+        { embeddings: { $exists: true, $ne: [] } }
+      ]
+    });
+
+    if (duplicateFaceDescriptor) {
+      // Check if the face descriptor is similar (cosine similarity > 0.8)
+      const existingEmbeddings = duplicateFaceDescriptor.embeddings || [duplicateFaceDescriptor.faceDescriptor];
+      let isDuplicateFace = false;
+
+      for (const existingEmbedding of existingEmbeddings) {
+        if (existingEmbedding && existingEmbedding.length > 0) {
+          const similarity = cosineSimilarity(faceEmbedding, existingEmbedding);
+          console.log(`📊 Face similarity with ${duplicateFaceDescriptor.name}: ${similarity.toFixed(4)}`);
+          if (similarity > 0.8) {
+            isDuplicateFace = true;
+            break;
+          }
+        }
+      }
+
+      if (isDuplicateFace) {
+        console.log('❌ Duplicate face descriptor found in same class');
+        res.status(400).json({ 
+          message: 'Face data already exists in this class',
+          hint: `A student with similar face data is already registered for ${subject} - Section ${section}. Please ensure the face is different.`
+        });
+        return;
+      }
+    }
+
     // Upsert by rollNumber; add enrollment if not present
     console.log('🔍 Checking for existing student with roll number:', rollNumber);
     const existing = await Student.findOne({ rollNumber });
-    const enrollmentKey = `${subject}::${section}::${facultyId}`;
 
     if (existing) {
       console.log('✅ Student exists, updating...');
@@ -186,6 +260,87 @@ export async function getStudents(req: Request, res: Response): Promise<void> {
   } catch (error) {
     console.error('Get students error:', error);
     res.status(500).json({ message: 'Failed to fetch students' });
+  }
+}
+
+export async function updateStudent(req: Request, res: Response): Promise<void> {
+  try {
+    const facultyId = req.userId;
+    if (!facultyId || !mongoose.isValidObjectId(facultyId)) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const { studentId } = req.params;
+    if (!studentId || !mongoose.isValidObjectId(studentId)) {
+      res.status(400).json({ message: 'Valid student ID is required' });
+      return;
+    }
+
+    const { name, rollNumber, faceImageBase64 } = req.body as {
+      name?: string;
+      rollNumber?: string;
+      faceImageBase64?: string;
+    };
+
+    // Check if at least one field is provided for update
+    if (!name && !rollNumber && !faceImageBase64) {
+      res.status(400).json({ 
+        message: 'At least one field (name, rollNumber, or faceImageBase64) must be provided for update' 
+      });
+      return;
+    }
+
+    // Find the student and verify they are enrolled with this faculty
+    const student = await Student.findById(studentId);
+    if (!student) {
+      res.status(404).json({ message: 'Student not found' });
+      return;
+    }
+
+    // Check if student is enrolled with this faculty
+    const hasEnrollment = student.enrollments.some(e => 
+      String(e.facultyId) === String(facultyId)
+    );
+
+    if (!hasEnrollment) {
+      res.status(403).json({ message: 'You can only update students enrolled in your classes' });
+      return;
+    }
+
+    // Update basic info if provided
+    if (name && name.trim()) {
+      student.name = name.trim();
+    }
+    if (rollNumber && rollNumber.trim()) {
+      student.rollNumber = rollNumber.trim();
+    }
+
+    // Update face data if provided
+    if (faceImageBase64) {
+      console.log('🔄 Processing face image for update with FaceNet...');
+      try {
+        const faceEmbedding = await getFaceEmbedding(faceImageBase64);
+        console.log('✅ FaceNet embedding generated for update, length:', faceEmbedding.length);
+        
+        // Update both legacy and new embedding fields
+        student.faceDescriptor = faceEmbedding;
+        student.embeddings = [faceEmbedding];
+      } catch (error: any) {
+        console.error('❌ FaceNet processing error during update:', error);
+        res.status(400).json({ 
+          message: error.message || 'Failed to process face image',
+          hint: 'Please ensure the image contains a clear face and try again'
+        });
+        return;
+      }
+    }
+
+    await student.save();
+    res.json({ message: 'Student updated successfully' });
+  } catch (error) {
+    console.error('Update student error:', error);
+    res.status(500).json({ message: 'Failed to update student' });
   }
 }
 

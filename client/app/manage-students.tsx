@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
-  ScrollView, 
+  ScrollView,
   Pressable, 
   StyleSheet, 
   Alert,
-  ActivityIndicator,
-  RefreshControl,
   SafeAreaView,
   Modal
 } from 'react-native';
 import { router } from 'expo-router';
-import { getStudentsApi, deleteStudentApi } from '@/api/students';
+import { getStudentsApi, deleteStudentApi, updateStudentApi } from '@/api/students';
 import { getFacultySubjectsApi } from '@/api/auth';
+import EditStudentModal from '@/components/edit-student-modal';
+import StudentDetailsModal from '@/components/student-details-modal';
 
 type Student = {
   id: string;
@@ -27,15 +27,19 @@ type Student = {
 
 export default function ManageStudentsScreen() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [selectedSessionType, setSelectedSessionType] = useState<string>('');
   const [facultySubjects, setFacultySubjects] = useState<string[]>([]);
   const [subjectSections, setSubjectSections] = useState<{ [key: string]: string[] }>({});
   const [subjectSessionTypes, setSubjectSessionTypes] = useState<{ [key: string]: string[] }>({});
+  
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  
+  // Student details modal state
+  const [showStudentDetailsModal, setShowStudentDetailsModal] = useState(false);
   
   type ActiveDropdown = 'subject' | 'section' | 'sessionType' | null;
   const [activeDropdown, setActiveDropdown] = useState<ActiveDropdown>(null);
@@ -55,15 +59,8 @@ export default function ManageStudentsScreen() {
     loadFacultySubjects();
   }, []);
 
-  const loadStudents = async (isRefresh = false) => {
+  const loadStudents = async () => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
       if (!selectedSubject || !selectedSection || !selectedSessionType) {
         setStudents([]);
         return;
@@ -73,10 +70,7 @@ export default function ManageStudentsScreen() {
       setStudents(response.students);
     } catch (err: any) {
       console.error('Failed to load students:', err);
-      setError(err?.response?.data?.message || 'Failed to load students');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to load students');
     }
   };
 
@@ -124,6 +118,23 @@ export default function ManageStudentsScreen() {
     setActiveDropdown(null);
   };
 
+  const handleEditStudent = (student: Student) => {
+    setEditingStudent(student);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateStudent = async (studentId: string, data: { name: string; rollNumber: string; faceImageBase64?: string }) => {
+    try {
+      await updateStudentApi(studentId, data);
+      Alert.alert('Success', 'Student updated successfully');
+      loadStudents();
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to update student';
+      Alert.alert('Error', errorMessage);
+      throw error; // Re-throw to let the modal handle it
+    }
+  };
+
   const handleDeleteStudent = (studentId: string, studentName: string) => {
     Alert.alert(
       'Delete Student',
@@ -137,7 +148,7 @@ export default function ManageStudentsScreen() {
             try {
               await deleteStudentApi(studentId);
               Alert.alert('Success', 'Student deleted successfully');
-              loadStudents(true);
+              loadStudents();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete student');
             }
@@ -325,79 +336,60 @@ export default function ManageStudentsScreen() {
       {/* Class Info */}
       {selectedSubject && selectedSection && selectedSessionType && (
         <View style={styles.classInfo}>
-          <Text style={styles.classInfoText}>
-            {selectedSubject} - Section {selectedSection} - {selectedSessionType}
-          </Text>
-          <Text style={styles.studentCount}>{students.length} students</Text>
+          <View style={styles.classInfoLeft}>
+            <Text style={styles.classInfoText}>
+              {selectedSubject} - Section {selectedSection} - {selectedSessionType}
+            </Text>
+            <Text style={styles.studentCount}>{students.length} students</Text>
+          </View>
+          <Pressable
+            onPress={() => setShowStudentDetailsModal(true)}
+            style={({ pressed }) => [
+              styles.viewButton,
+              pressed && styles.viewButtonPressed
+            ]}
+          >
+            <Text style={styles.viewButtonText}>View</Text>
+          </Pressable>
         </View>
       )}
 
-      {/* Students List */}
-      {selectedSubject && selectedSection && selectedSessionType ? (
-        loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#10B981" />
-            <Text style={styles.loadingText}>Loading students...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Error: {error}</Text>
-            <Pressable onPress={() => loadStudents()} style={styles.retryButton}>
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <ScrollView 
-            style={styles.content}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => loadStudents(true)}
-                colors={['#10B981']}
-              />
-            }
-          >
-            {students.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No students found</Text>
-                <Text style={styles.emptySubtext}>
-                  Students registered for this class will appear here
-                </Text>
-              </View>
-            ) : (
-              students.map((student) => (
-                <View key={student.id} style={styles.studentCard}>
-                  <View style={styles.studentInfo}>
-                    <Text style={styles.studentName}>{student.name}</Text>
-                    <Text style={styles.studentRoll}>Roll: {student.rollNumber}</Text>
-                    <Text style={styles.studentSessionType}>{student.sessionType}</Text>
-                  </View>
-                  <View style={styles.studentActions}>
-                    <Pressable
-                      onPress={() => handleDeleteStudent(student.id, student.name)}
-                      style={({ pressed }) => [
-                        styles.deleteButton,
-                        pressed && styles.deleteButtonPressed
-                      ]}
-                    >
-                      <Text style={styles.deleteButtonText}>Delete</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))
-            )}
-          </ScrollView>
-        )
-      ) : (
+      {/* Empty State when no class selected */}
+      {!selectedSubject || !selectedSection || !selectedSessionType ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Select a class to view students</Text>
           <Text style={styles.emptySubtext}>
             Choose subject, section, and session type to get started
           </Text>
         </View>
-      )}
+      ) : null}
 
         <SingleDropdownModal />
+        
+        {/* Edit Student Modal */}
+        <EditStudentModal
+          visible={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingStudent(null);
+          }}
+          onSave={handleUpdateStudent}
+          onDelete={handleDeleteStudent}
+          student={editingStudent}
+        />
+        
+        {/* Student Details Modal */}
+        <StudentDetailsModal
+          visible={showStudentDetailsModal}
+          onClose={() => setShowStudentDetailsModal(false)}
+          students={students}
+          classInfo={{
+            subject: selectedSubject,
+            section: selectedSection,
+            sessionType: selectedSessionType
+          }}
+          onEditStudent={handleEditStudent}
+        />
       </SafeAreaView>
     );
   }
@@ -523,6 +515,9 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  classInfoLeft: {
+    flex: 1,
+  },
   classInfoText: {
     fontSize: 16,
     fontWeight: '600',
@@ -532,37 +527,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  viewButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 12,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6B7280',
+  viewButtonPressed: {
+    opacity: 0.9,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
+  viewButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -581,55 +558,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
-  },
-  studentCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  studentInfo: {
-    flex: 1,
-  },
-  studentName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  studentRoll: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 2,
-  },
-  studentSessionType: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  studentActions: {
-    marginLeft: 12,
-  },
-  deleteButton: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  deleteButtonPressed: {
-    opacity: 0.9,
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
   },
   // Modal styles
   modalOverlay: {
