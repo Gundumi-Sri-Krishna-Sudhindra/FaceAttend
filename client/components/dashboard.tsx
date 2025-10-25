@@ -65,9 +65,15 @@ export default function Dashboard({
     try {
       const response = await getStudentsApi(session.subject, session.section);
       setHasRegisteredStudents(response.students.length > 0);
-    } catch (error) {
-      console.error('Failed to check registered students:', error);
-      setHasRegisteredStudents(false);
+    } catch (error: any) {
+      // Handle 401 errors (logged out) gracefully
+      if (error?.response?.status === 401) {
+        console.log('User not authenticated, skipping student check');
+        setHasRegisteredStudents(false);
+      } else {
+        console.error('Failed to check registered students:', error);
+        setHasRegisteredStudents(false);
+      }
     } finally {
       setIsCheckingStudents(false);
     }
@@ -84,9 +90,15 @@ export default function Dashboard({
     try {
       const response = await checkAttendanceStatusApi(session.subject, session.section, session.sessionType);
       setAttendanceStatus(response);
-    } catch (error) {
-      console.error('Failed to check attendance status:', error);
-      setAttendanceStatus(null);
+    } catch (error: any) {
+      // Handle 401 errors (logged out) gracefully
+      if (error?.response?.status === 401) {
+        console.log('User not authenticated, skipping attendance status check');
+        setAttendanceStatus(null);
+      } else {
+        console.error('Failed to check attendance status:', error);
+        setAttendanceStatus(null);
+      }
     } finally {
       setIsCheckingAttendance(false);
     }
