@@ -524,6 +524,81 @@ export async function getAttendanceSession(req: Request, res: Response): Promise
   }
 }
 
+// Get student attendance data for a specific subject/section/sessionType
+export async function getStudentAttendanceData(req: Request, res: Response): Promise<void> {
+  try {
+    const facultyId = req.userId;
+    const { subject, section, sessionType } = req.query;
+    
+    if (!facultyId || !mongoose.isValidObjectId(facultyId)) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
+    if (!subject || !section || !sessionType) {
+      res.status(400).json({ message: 'subject, section, and sessionType are required' });
+      return;
+    }
+    
+    // Get all attendance sessions for this subject/section/sessionType
+    const sessions = await AttendanceSession.find({
+      facultyId: new mongoose.Types.ObjectId(facultyId),
+      subject: subject as string,
+      section: section as string,
+      sessionType: sessionType as string
+    }).sort({ date: -1 }); // Most recent first
+    
+    // Get all students for this subject/section
+    const students = await Student.find({
+      'enrollments.subject': subject as string,
+      'enrollments.section': section as string,
+      'enrollments.facultyId': new mongoose.Types.ObjectId(facultyId)
+    }).select('name rollNumber');
+    
+    // Calculate attendance for each student
+    const studentAttendanceData = students.map(student => {
+      let totalSessions = 0;
+      let presentSessions = 0;
+      
+      sessions.forEach(session => {
+        totalSessions++;
+        const studentRecord = session.records.find(record => 
+          record.studentId.toString() === student._id.toString()
+        );
+        if (studentRecord && studentRecord.isPresent) {
+          presentSessions++;
+        }
+      });
+      
+      const attendancePercentage = totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : 0;
+      
+      return {
+        studentId: student._id,
+        name: student.name,
+        rollNumber: student.rollNumber,
+        totalSessions,
+        presentSessions,
+        absentSessions: totalSessions - presentSessions,
+        attendancePercentage,
+        lastAttendanceDate: sessions.length > 0 ? sessions[0].date : null
+      };
+    });
+    
+    res.status(200).json({
+      students: studentAttendanceData,
+      totalSessions: sessions.length,
+      dateRange: sessions.length > 0 ? {
+        from: sessions[sessions.length - 1].date,
+        to: sessions[0].date
+      } : null
+    });
+    
+  } catch (error) {
+    console.error('Get student attendance data error:', error);
+    res.status(500).json({ message: 'Failed to get student attendance data' });
+  }
+}
+
 // Get attendance reports
 export async function getAttendanceReports(req: Request, res: Response): Promise<void> {
   try {

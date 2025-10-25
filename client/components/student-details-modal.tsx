@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import Papa from 'papaparse';
+import { StudentAttendanceData } from '@/api/attendance';
 
 type Student = {
   id: string;
@@ -27,6 +28,7 @@ type StudentDetailsModalProps = {
   visible: boolean;
   onClose: () => void;
   students: Student[];
+  attendanceData: StudentAttendanceData[];
   classInfo: {
     subject: string;
     section: string;
@@ -39,6 +41,7 @@ export default function StudentDetailsModal({
   visible,
   onClose,
   students,
+  attendanceData,
   classInfo,
   onEditStudent
 }: StudentDetailsModalProps) {
@@ -55,6 +58,16 @@ export default function StudentDetailsModal({
     });
   };
 
+  const getStudentAttendance = (studentId: string): StudentAttendanceData | null => {
+    return attendanceData.find(att => att.studentId === studentId) || null;
+  };
+
+  const getAttendanceColor = (percentage: number) => {
+    if (percentage >= 80) return '#10B981'; // Green
+    if (percentage >= 60) return '#F59E0B'; // Amber
+    return '#EF4444'; // Red
+  };
+
   // Export functions
   const buildCsv = () => {
     const headerSection = [[
@@ -68,12 +81,19 @@ export default function StudentDetailsModal({
     ]];
     
     const studentHeader = [['Student Details']];
-    const studentRows = [['Name', 'Roll Number', 'Registered Date'], ...(
-      students.map((student) => [
-        student.name,
-        student.rollNumber,
-        new Date(student.createdAt).toISOString()
-      ])
+    const studentRows = [['Name', 'Roll Number', 'Registered Date', 'Attendance %', 'Present Sessions', 'Total Sessions', 'Last Present Date'], ...(
+      students.map((student) => {
+        const attendance = getStudentAttendance(student.id);
+        return [
+          student.name,
+          student.rollNumber,
+          new Date(student.createdAt).toISOString(),
+          attendance ? `${attendance.attendancePercentage}%` : 'N/A',
+          attendance ? attendance.presentSessions.toString() : 'N/A',
+          attendance ? attendance.totalSessions.toString() : 'N/A',
+          attendance && attendance.lastAttendanceDate ? new Date(attendance.lastAttendanceDate).toISOString() : 'N/A'
+        ];
+      })
     )];
 
     const all = [
@@ -104,13 +124,22 @@ export default function StudentDetailsModal({
   };
 
   const buildHtml = () => {
-    const studentRows = students.map(student => `
-      <tr>
-        <td>${student.name}</td>
-        <td>${student.rollNumber}</td>
-        <td>${new Date(student.createdAt).toLocaleString()}</td>
-      </tr>
-    `).join('');
+    const studentRows = students.map(student => {
+      const attendance = getStudentAttendance(student.id);
+      const attendanceColor = attendance ? getAttendanceColor(attendance.attendancePercentage) : '#6B7280';
+      return `
+        <tr>
+          <td>${student.name}</td>
+          <td>${student.rollNumber}</td>
+          <td>${new Date(student.createdAt).toLocaleString()}</td>
+          <td style="color: ${attendanceColor}; font-weight: 600;">
+            ${attendance ? `${attendance.attendancePercentage}%` : 'N/A'}
+          </td>
+          <td>${attendance ? `${attendance.presentSessions}/${attendance.totalSessions}` : 'N/A'}</td>
+          <td>${attendance && attendance.lastAttendanceDate ? new Date(attendance.lastAttendanceDate).toLocaleString() : 'N/A'}</td>
+        </tr>
+      `;
+    }).join('');
 
     return `
       <!DOCTYPE html>
@@ -127,10 +156,13 @@ export default function StudentDetailsModal({
              th, td { border: 1px solid #D1D5DB; padding: 12px; text-align: left; }
              th { background: #F9FAFB; font-weight: 600; }
              .pill { background: #10B981; color: white; padding: 4px 8px; border-radius: 4px; }
+             .attendance-good { color: #10B981; font-weight: 600; }
+             .attendance-average { color: #F59E0B; font-weight: 600; }
+             .attendance-poor { color: #EF4444; font-weight: 600; }
            </style>
         </head>
         <body>
-          <h1>Student List</h1>
+          <h1>Student List with Attendance</h1>
           <div class="class-info">
             <div><strong>Subject:</strong> ${classInfo.subject}</div>
             <div><strong>Section:</strong> ${classInfo.section}</div>
@@ -138,17 +170,20 @@ export default function StudentDetailsModal({
             <div><strong>Total Students:</strong> <span class="pill">${students.length}</span></div>
             <div><strong>Export Date:</strong> ${new Date().toLocaleString()}</div>
           </div>
-          <h2>Student Details</h2>
+          <h2>Student Details with Attendance</h2>
           <table>
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Roll Number</th>
                 <th>Registered Date</th>
+                <th>Attendance %</th>
+                <th>Sessions (Present/Total)</th>
+                <th>Last Present Date</th>
               </tr>
             </thead>
             <tbody>
-              ${studentRows || '<tr><td colspan="3">No students found</td></tr>'}
+              ${studentRows || '<tr><td colspan="6">No students found</td></tr>'}
             </tbody>
           </table>
         </body>
@@ -230,33 +265,62 @@ export default function StudentDetailsModal({
               </Text>
             </View>
           ) : (
-            students.map((student, index) => (
-              <View key={student.id} style={styles.studentCard}>
-                <View style={styles.studentHeader}>
-                  <Text style={styles.studentNumber}>#{index + 1}</Text>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  <Pressable
-                    onPress={() => onEditStudent(student)}
-                    style={({ pressed }) => [
-                      styles.editButton,
-                      pressed && styles.editButtonPressed
-                    ]}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </Pressable>
-                </View>
-                <View style={styles.studentDetails}>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Roll Number:</Text>
-                    <Text style={styles.detailValue}>{student.rollNumber}</Text>
+            students.map((student, index) => {
+              const attendance = getStudentAttendance(student.id);
+              return (
+                <View key={student.id} style={styles.studentCard}>
+                  <View style={styles.studentHeader}>
+                    <Text style={styles.studentNumber}>#{index + 1}</Text>
+                    <Text style={styles.studentName}>{student.name}</Text>
+                    <Pressable
+                      onPress={() => onEditStudent(student)}
+                      style={({ pressed }) => [
+                        styles.editButton,
+                        pressed && styles.editButtonPressed
+                      ]}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </Pressable>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Registered:</Text>
-                    <Text style={styles.detailValue}>{formatDate(student.createdAt)}</Text>
+                  <View style={styles.studentDetails}>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Roll Number:</Text>
+                      <Text style={styles.detailValue}>{student.rollNumber}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Registered:</Text>
+                      <Text style={styles.detailValue}>{formatDate(student.createdAt)}</Text>
+                    </View>
+                    {attendance && (
+                      <>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Attendance:</Text>
+                          <View style={styles.attendanceContainer}>
+                            <Text style={[
+                              styles.attendancePercentage,
+                              { color: getAttendanceColor(attendance.attendancePercentage) }
+                            ]}>
+                              {attendance.attendancePercentage}%
+                            </Text>
+                            <Text style={styles.attendanceDetails}>
+                              ({attendance.presentSessions}/{attendance.totalSessions} sessions)
+                            </Text>
+                          </View>
+                        </View>
+                        {attendance.lastAttendanceDate && (
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Last Present:</Text>
+                            <Text style={styles.detailValue}>
+                              {formatDate(attendance.lastAttendanceDate)}
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    )}
                   </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
 
@@ -477,6 +541,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 2,
     textAlign: 'right',
+  },
+  attendanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 2,
+    justifyContent: 'flex-end',
+  },
+  attendancePercentage: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  attendanceDetails: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   // Export modal styles
   exportOverlay: {

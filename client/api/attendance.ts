@@ -134,3 +134,29 @@ export async function checkAttendanceStatusApi(subject: string, section: string,
   const res = await http.get<AttendanceStatusResponse>(`/api/attendance/status?subject=${encodeURIComponent(subject)}&section=${encodeURIComponent(section)}&sessionType=${encodeURIComponent(sessionType)}`);
   return res.data;
 }
+
+// Get student attendance data for a specific subject/section/sessionType
+export type StudentAttendanceData = {
+  studentId: string;
+  name: string;
+  rollNumber: string;
+  totalSessions: number;
+  presentSessions: number;
+  absentSessions: number;
+  attendancePercentage: number;
+  lastAttendanceDate: string | null;
+};
+
+export type StudentAttendanceResponse = {
+  students: StudentAttendanceData[];
+  totalSessions: number;
+  dateRange: {
+    from: string;
+    to: string;
+  } | null;
+};
+
+export async function getStudentAttendanceDataApi(subject: string, section: string, sessionType: string): Promise<StudentAttendanceResponse> {
+  const res = await http.get<StudentAttendanceResponse>(`/api/attendance/student-data?subject=${encodeURIComponent(subject)}&section=${encodeURIComponent(section)}&sessionType=${encodeURIComponent(sessionType)}`);
+  return res.data;
+}

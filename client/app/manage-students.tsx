@@ -12,6 +12,7 @@ import {
 import { router } from 'expo-router';
 import { getStudentsApi, deleteStudentApi, updateStudentApi } from '@/api/students';
 import { getFacultySubjectsApi } from '@/api/auth';
+import { getStudentAttendanceDataApi, StudentAttendanceData } from '@/api/attendance';
 import EditStudentModal from '@/components/edit-student-modal';
 import StudentDetailsModal from '@/components/student-details-modal';
 
@@ -27,6 +28,7 @@ type Student = {
 
 export default function ManageStudentsScreen() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [attendanceData, setAttendanceData] = useState<StudentAttendanceData[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [selectedSessionType, setSelectedSessionType] = useState<string>('');
@@ -63,11 +65,21 @@ export default function ManageStudentsScreen() {
     try {
       if (!selectedSubject || !selectedSection || !selectedSessionType) {
         setStudents([]);
+        setAttendanceData([]);
         return;
       }
 
       const response = await getStudentsApi(selectedSubject, selectedSection);
       setStudents(response.students);
+      
+      // Load attendance data
+      try {
+        const attendanceResponse = await getStudentAttendanceDataApi(selectedSubject, selectedSection, selectedSessionType);
+        setAttendanceData(attendanceResponse.students);
+      } catch (attendanceErr) {
+        console.error('Failed to load attendance data:', attendanceErr);
+        setAttendanceData([]);
+      }
     } catch (err: any) {
       console.error('Failed to load students:', err);
       Alert.alert('Error', err?.response?.data?.message || 'Failed to load students');
@@ -398,6 +410,7 @@ export default function ManageStudentsScreen() {
           visible={showStudentDetailsModal}
           onClose={() => setShowStudentDetailsModal(false)}
           students={students}
+          attendanceData={attendanceData}
           classInfo={{
             subject: selectedSubject,
             section: selectedSection,

@@ -4,7 +4,8 @@ import {
   markAttendance, 
   getAttendanceSession, 
   getAttendanceReports,
-  checkAttendanceStatus
+  checkAttendanceStatus,
+  getStudentAttendanceData
 } from '../controllers/attendance.controller';
 import { verifyFacultyToken } from '../middleware/auth';
 
@@ -24,3 +25,6 @@ attendanceRouter.get('/reports', verifyFacultyToken, getAttendanceReports);
 
 // Check if attendance has been taken for today's session
 attendanceRouter.get('/status', verifyFacultyToken, checkAttendanceStatus);
+
+// Get student attendance data for a specific subject/section/sessionType
+attendanceRouter.get('/student-data', verifyFacultyToken, getStudentAttendanceData);
