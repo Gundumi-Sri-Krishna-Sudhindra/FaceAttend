@@ -389,6 +389,56 @@ export async function markAttendance(req: Request, res: Response): Promise<void>
   }
 }
 
+// Check if attendance has been taken for today's session
+export async function checkAttendanceStatus(req: Request, res: Response): Promise<void> {
+  try {
+    const facultyId = req.userId;
+    const { subject, section, sessionType } = req.query;
+    
+    if (!facultyId || !mongoose.isValidObjectId(facultyId)) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
+    if (!subject || !section || !sessionType) {
+      res.status(400).json({ message: 'subject, section, and sessionType are required' });
+      return;
+    }
+    
+    // Check if session exists for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingSession = await AttendanceSession.findOne({
+      facultyId: new mongoose.Types.ObjectId(facultyId),
+      subject: subject as string,
+      section: section as string,
+      sessionType: sessionType as string,
+      date: today
+    });
+    
+    if (existingSession) {
+      res.status(200).json({
+        hasAttendance: true,
+        sessionId: existingSession._id,
+        totalStudents: existingSession.totalStudents,
+        presentStudents: existingSession.presentStudents,
+        absentStudents: existingSession.absentStudents,
+        createdAt: existingSession.createdAt,
+        updatedAt: existingSession.updatedAt
+      });
+    } else {
+      res.status(200).json({
+        hasAttendance: false
+      });
+    }
+    
+  } catch (error) {
+    console.error('Check attendance status error:', error);
+    res.status(500).json({ message: 'Failed to check attendance status' });
+  }
+}
+
 // Get attendance session details
 export async function getAttendanceSession(req: Request, res: Response): Promise<void> {
   try {

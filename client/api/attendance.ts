@@ -17,6 +17,9 @@ export type StartAttendanceSessionResponse = {
     rollNumber: string;
     hasFaceDescriptor: boolean;
   }>;
+  // For existing sessions
+  presentStudents?: number;
+  absentStudents?: number;
 };
 
 export type MarkAttendanceInput = {
@@ -80,6 +83,16 @@ export type AttendanceReportsResponse = {
   }>;
 };
 
+export type AttendanceStatusResponse = {
+  hasAttendance: boolean;
+  sessionId?: string;
+  totalStudents?: number;
+  presentStudents?: number;
+  absentStudents?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 // Start new attendance session
 export async function startAttendanceSessionApi(data: StartAttendanceSessionInput): Promise<StartAttendanceSessionResponse> {
   const res = await http.post<StartAttendanceSessionResponse>('/api/attendance/start', data);
@@ -113,5 +126,11 @@ export async function getAttendanceReportsApi(params?: {
   
   const url = `/api/attendance/reports${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   const res = await http.get<AttendanceReportsResponse>(url);
+  return res.data;
+}
+
+// Check if attendance has been taken for today's session
+export async function checkAttendanceStatusApi(subject: string, section: string, sessionType: string): Promise<AttendanceStatusResponse> {
+  const res = await http.get<AttendanceStatusResponse>(`/api/attendance/status?subject=${encodeURIComponent(subject)}&section=${encodeURIComponent(section)}&sessionType=${encodeURIComponent(sessionType)}`);
   return res.data;
 }

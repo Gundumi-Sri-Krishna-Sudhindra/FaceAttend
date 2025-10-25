@@ -108,6 +108,47 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  attendanceTakenContainer: {
+    gap: 12,
+  },
+  attendanceTakenInfo: {
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  attendanceTakenButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  attendanceDetailsText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  attendanceTimeText: {
+    color: '#D1FAE5',
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  retakeAttendanceButton: {
+    backgroundColor: '#F59E0B',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  retakeAttendanceButtonPressed: {
+    backgroundColor: '#D97706',
+  },
+  retakeAttendanceButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   noSessionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,

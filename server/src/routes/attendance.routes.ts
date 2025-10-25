@@ -3,7 +3,8 @@ import {
   startAttendanceSession, 
   markAttendance, 
   getAttendanceSession, 
-  getAttendanceReports 
+  getAttendanceReports,
+  checkAttendanceStatus
 } from '../controllers/attendance.controller';
 import { verifyFacultyToken } from '../middleware/auth';
 
@@ -20,3 +21,6 @@ attendanceRouter.get('/session/:sessionId', verifyFacultyToken, getAttendanceSes
 
 // Get attendance reports
 attendanceRouter.get('/reports', verifyFacultyToken, getAttendanceReports);
+
+// Check if attendance has been taken for today's session
+attendanceRouter.get('/status', verifyFacultyToken, checkAttendanceStatus);

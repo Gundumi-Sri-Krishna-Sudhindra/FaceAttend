@@ -8,6 +8,7 @@ import AttendanceReports from './attendance-reports';
 import { TimetableDay as ApiTimetableDay, Session as ApiSession } from '@/api/timetable';
 import { TIME_SLOTS, getCurrentSession } from '@/utils/timeSlots';
 import { getStudentsApi } from '@/api/students';
+import { checkAttendanceStatusApi } from '@/api/attendance';
 
 type User = {
   id: string;
@@ -50,6 +51,8 @@ export default function Dashboard({
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [hasRegisteredStudents, setHasRegisteredStudents] = useState<boolean | null>(null);
   const [isCheckingStudents, setIsCheckingStudents] = useState(false);
+  const [attendanceStatus, setAttendanceStatus] = useState<any>(null);
+  const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
 
   // Check if students are registered for the current session
   const checkRegisteredStudents = async (session: any) => {
@@ -70,11 +73,31 @@ export default function Dashboard({
     }
   };
 
+  // Check if attendance has been taken for today's session
+  const checkAttendanceStatus = async (session: any) => {
+    if (!session) {
+      setAttendanceStatus(null);
+      return;
+    }
+
+    setIsCheckingAttendance(true);
+    try {
+      const response = await checkAttendanceStatusApi(session.subject, session.section, session.sessionType);
+      setAttendanceStatus(response);
+    } catch (error) {
+      console.error('Failed to check attendance status:', error);
+      setAttendanceStatus(null);
+    } finally {
+      setIsCheckingAttendance(false);
+    }
+  };
+
   // Update current session when timetable changes
   useEffect(() => {
     const session = getCurrentSession(timetable);
     setCurrentSession(session);
     checkRegisteredStudents(session);
+    checkAttendanceStatus(session);
   }, [timetable]);
 
   // Update current session every 30 seconds to handle time changes and student updates
@@ -83,16 +106,18 @@ export default function Dashboard({
       const session = getCurrentSession(timetable);
       setCurrentSession(session);
       checkRegisteredStudents(session);
+      checkAttendanceStatus(session);
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
   }, [timetable]);
 
-  // Check for students whenever dashboard comes into focus
+  // Check for students and attendance status whenever dashboard comes into focus
   useFocusEffect(
     React.useCallback(() => {
       if (currentSession) {
         checkRegisteredStudents(currentSession);
+        checkAttendanceStatus(currentSession);
       }
     }, [currentSession])
   );
@@ -145,13 +170,16 @@ export default function Dashboard({
                     </View>
                     {/* Refresh Button - Top Right */}
                     <Pressable
-                      onPress={() => checkRegisteredStudents(currentSession)}
+                      onPress={() => {
+                        checkRegisteredStudents(currentSession);
+                        checkAttendanceStatus(currentSession);
+                      }}
                       style={({ pressed }) => [
                         styles.refreshButton,
                         pressed && styles.refreshButtonPressed
                       ]}
                       accessibilityRole="button"
-                      accessibilityLabel="Refresh student status"
+                      accessibilityLabel="Refresh student and attendance status"
                     >
                       <Text style={styles.refreshButtonText}>🔄</Text>
                     </Pressable>
@@ -162,18 +190,37 @@ export default function Dashboard({
                     <Text style={styles.detailText}>Time: {currentSession.timeSlot}</Text>
                   </View>
                   {(() => {
-                    if (isCheckingStudents) {
-                      return (
-                        <View style={[styles.takeAttendanceButton, styles.disabledButton]}>
-                          <Text style={styles.takeAttendanceButtonText}>Checking students...</Text>
-                        </View>
-                      );
-                    }
-                    
                     if (hasRegisteredStudents === false) {
                       return (
                         <View style={[styles.takeAttendanceButton, styles.disabledButton]}>
                           <Text style={styles.takeAttendanceButtonText}>No Students Registered</Text>
+                        </View>
+                      );
+                    }
+                    
+                    if (attendanceStatus?.hasAttendance) {
+                      const attendancePercentage = Math.round((attendanceStatus.presentStudents / attendanceStatus.totalStudents) * 100);
+                      const attendanceTime = new Date(attendanceStatus.updatedAt).toLocaleTimeString();
+                      return (
+                        <View style={styles.attendanceTakenContainer}>
+                          <View style={styles.attendanceTakenInfo}>
+                            <Text style={styles.attendanceTakenButtonText}>✅ Attendance Taken</Text>
+                            <Text style={styles.attendanceDetailsText}>
+                              {attendanceStatus.presentStudents}/{attendanceStatus.totalStudents} present ({attendancePercentage}%)
+                            </Text>
+                            <Text style={styles.attendanceTimeText}>Completed at {attendanceTime}</Text>
+                          </View>
+                          <Pressable
+                            onPress={() => setHoursModalVisible(true)}
+                            style={({ pressed }) => [
+                              styles.retakeAttendanceButton,
+                              pressed && styles.retakeAttendanceButtonPressed
+                            ]}
+                            accessibilityRole="button"
+                            accessibilityLabel="Retake attendance for missed students"
+                          >
+                            <Text style={styles.retakeAttendanceButtonText}>Retake Attendance</Text>
+                          </Pressable>
                         </View>
                       );
                     }

@@ -24,6 +24,16 @@ type LiveAttendanceProps = {
   totalStudents: number;
   onAttendanceMarked: (data: any) => void;
   onClose: () => void;
+  existingAttendance?: {
+    presentStudents: number;
+    absentStudents: number;
+    markedStudents: Array<{
+      id: string;
+      name: string;
+      rollNumber: string;
+      isPresent: boolean;
+    }>;
+  };
 };
 
 type AttendanceStats = {
@@ -40,14 +50,24 @@ export default function LiveAttendance({
   hours, 
   totalStudents,
   onAttendanceMarked,
-  onClose 
+  onClose,
+  existingAttendance
 }: LiveAttendanceProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats>({
-    present: 0,
-    absent: totalStudents,
-    total: totalStudents
+  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats>(() => {
+    if (existingAttendance) {
+      return {
+        present: existingAttendance.presentStudents,
+        absent: existingAttendance.absentStudents,
+        total: totalStudents
+      };
+    }
+    return {
+      present: 0,
+      absent: totalStudents,
+      total: totalStudents
+    };
   });
   const [recentlyMarked, setRecentlyMarked] = useState<string[]>([]);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -64,6 +84,26 @@ export default function LiveAttendance({
   const markedStudentsRef = useRef<Set<string>>(new Set());
   const isDetectingRef = useRef<boolean>(false);
   const { isKioskMode, enableKioskMode, showPasswordModal, setShowPasswordModal } = useKiosk();
+
+  // Initialize marked students with existing attendance data
+  useEffect(() => {
+    if (existingAttendance) {
+      const alreadyMarked = new Set(
+        existingAttendance.markedStudents
+          .filter(student => student.isPresent)
+          .map(student => student.id)
+      );
+      markedStudentsRef.current = alreadyMarked;
+      setMarkedStudents(alreadyMarked);
+      
+      // Add recently marked students to the display
+      const recentlyMarkedNames = existingAttendance.markedStudents
+        .filter(student => student.isPresent)
+        .map(student => `${student.name} (${student.rollNumber})`)
+        .slice(0, 4);
+      setRecentlyMarked(recentlyMarkedNames);
+    }
+  }, [existingAttendance]);
 
   // Enable kiosk mode when component mounts
   useEffect(() => {
@@ -218,8 +258,7 @@ export default function LiveAttendance({
     isDetectingRef.current = false;
     setIsProcessing(false);
     setLastProcessedImage(null); // Clear image hash
-    markedStudentsRef.current.clear(); // Clear marked students
-    setMarkedStudents(new Set());
+    // DO NOT clear markedStudentsRef - we want to maintain the list of already marked students
   }, []);
 
   // Cleanup on unmount

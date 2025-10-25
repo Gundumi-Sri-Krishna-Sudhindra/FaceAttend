@@ -12,6 +12,7 @@ const TakeAttendancePage = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [existingAttendance, setExistingAttendance] = useState<any>(null);
   const [isSessionCreating, setIsSessionCreating] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,21 @@ const TakeAttendancePage = () => {
         });
         
         setSessionId(result.sessionId);
+        
+        // Check if this is an existing session with attendance data
+        if (result.presentStudents !== undefined && result.absentStudents !== undefined) {
+          setExistingAttendance({
+            presentStudents: result.presentStudents,
+            absentStudents: result.absentStudents,
+            markedStudents: result.students.map((student: any) => ({
+              id: student.id,
+              name: student.name,
+              rollNumber: student.rollNumber,
+              isPresent: student.isPresent || false
+            }))
+          });
+        }
+        
         console.log('Attendance session started:', result);
         
       } catch (err: any) {
@@ -128,6 +144,7 @@ const TakeAttendancePage = () => {
       totalStudents={0} // Will be updated by the session
       onAttendanceMarked={handleAttendanceMarked}
       onClose={handleClose}
+      existingAttendance={existingAttendance}
     />
   );
 };
