@@ -2,7 +2,7 @@
 
 FaceAttend is a modern attendance management solution designed for educational institutions. The app leverages advanced face recognition technology to automatically identify and mark student attendance, eliminating the need for manual roll calls and preventing proxy attendance. With its intuitive mobile interface and secure kiosk mode, FaceAttend streamlines the attendance process while maintaining data integrity and security.
 
-FaceAttend is an end-to-end attendance system that uses face recognition to identify students and mark attendance automatically. It consists of:
+It consists of:
 - A mobile client (React Native + Expo)
 - A Node.js/Express backend with MongoDB
 - A Python/Flask FaceNet microservice for high-accuracy embeddings
