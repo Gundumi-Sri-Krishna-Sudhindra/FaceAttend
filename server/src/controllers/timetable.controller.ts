@@ -1,6 +1,36 @@
 import { Request, Response } from 'express';
 import { Faculty } from '../models/Faculty';
 
+// Check for overlapping hours within the same day
+function hasOverlappingHours(timetable: any[]): { hasOverlap: boolean; conflictDetails?: string } {
+  for (const day of timetable) {
+    if (!day.sessions || day.sessions.length <= 1) continue;
+    
+    // Check each session against all other sessions on the same day
+    for (let i = 0; i < day.sessions.length; i++) {
+      for (let j = i + 1; j < day.sessions.length; j++) {
+        const session1 = day.sessions[i];
+        const session2 = day.sessions[j];
+        
+        // Check if any hours overlap
+        const hours1 = new Set(session1.hours);
+        const hours2 = new Set(session2.hours);
+        
+        for (const hour of hours1) {
+          if (hours2.has(hour)) {
+            return {
+              hasOverlap: true,
+              conflictDetails: `${session1.subject} (${session1.section}) and ${session2.subject} (${session2.section}) both scheduled at hour ${hour} on ${day.day}`
+            };
+          }
+        }
+      }
+    }
+  }
+  
+  return { hasOverlap: false };
+}
+
 export async function updateTimetable(req: Request, res: Response): Promise<void> {
   try {
     const { facultyId } = req.params;
@@ -67,6 +97,17 @@ export async function updateTimetable(req: Request, res: Response): Promise<void
           }
         }
       }
+    }
+
+    // Check for overlapping hours
+    const overlapCheck = hasOverlappingHours(timetable);
+    if (overlapCheck.hasOverlap) {
+      res.status(400).json({ 
+        message: `Schedule conflict detected: ${overlapCheck.conflictDetails}`,
+        field: 'hours',
+        conflict: overlapCheck.conflictDetails
+      });
+      return;
     }
 
     const faculty = await Faculty.findByIdAndUpdate(

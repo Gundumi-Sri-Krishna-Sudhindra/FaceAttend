@@ -23,7 +23,7 @@ const EnrollmentSchema = new Schema<Enrollment>({
 
 const StudentSchema = new Schema<StudentDocument>({
   name: { type: String, required: true, trim: true },
-  rollNumber: { type: String, required: true, trim: true, index: true },
+  rollNumber: { type: String, required: true, trim: true },
   enrollments: { type: [EnrollmentSchema], default: [] },
   faceDescriptor: { type: [Number], required: false, default: [] }, // Legacy field
   embeddings: { type: [[Number]], required: false, default: [] }, // FaceNet embeddings

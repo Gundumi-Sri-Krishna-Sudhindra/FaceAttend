@@ -181,9 +181,11 @@ export default function LiveAttendance({
         try {
             const result = await markAttendanceApi(markData);
             
-            // Check if student was already marked to prevent duplicates
+            // Check server response message to determine if it's a duplicate
             const studentId = result.student.id;
-            if (!markedStudentsRef.current.has(studentId)) {
+            const isAlreadyMarked = result.message === 'Student already marked present';
+            
+            if (!isAlreadyMarked) {
               // Update UI
               setAttendanceStats({
                 present: result.attendance.present,

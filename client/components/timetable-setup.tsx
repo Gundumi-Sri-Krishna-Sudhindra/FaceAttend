@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { styles } from './styles/timetable-setup-styles';
-import { TIME_SLOTS, SESSION_TYPES, getTimeRange, getSessionDuration, validateConsecutiveHours } from '@/utils/timeSlots';
+import { TIME_SLOTS, SESSION_TYPES, getTimeRange, getSessionDuration, validateConsecutiveHours, getTimeSlotByHour } from '@/utils/timeSlots';
 
 type Session = {
   subject: string;
@@ -138,6 +138,38 @@ export default function TimetableSetup({ existingTimetable, onSubmit, onSkip, is
     return expandedSessions[key] || false;
   };
 
+  // Check for overlapping hours within the same day
+  const hasOverlappingHours = (timetable: TimetableDay[]): { hasOverlap: boolean; conflictDetails?: string } => {
+    for (const day of timetable) {
+      if (!day.sessions || day.sessions.length <= 1) continue;
+      
+      // Check each session against all other sessions on the same day
+      for (let i = 0; i < day.sessions.length; i++) {
+        for (let j = i + 1; j < day.sessions.length; j++) {
+          const session1 = day.sessions[i];
+          const session2 = day.sessions[j];
+          
+          // Check if any hours overlap
+          const hours1 = new Set(session1.hours);
+          const hours2 = new Set(session2.hours);
+          
+          for (const hour of hours1) {
+            if (hours2.has(hour)) {
+              const timeSlot = getTimeSlotByHour(hour);
+              const timeString = timeSlot ? timeSlot.time : `hour ${hour}`;
+              return {
+                hasOverlap: true,
+                conflictDetails: `${session1.subject} (${session1.section}) and ${session2.subject} (${session2.section}) both scheduled at ${timeString} on ${day.day}`
+              };
+            }
+          }
+        }
+      }
+    }
+    
+    return { hasOverlap: false };
+  };
+
   const handleSubmit = async () => {
     try {
       // Allow empty timetables - no need to validate for sessions
@@ -179,6 +211,16 @@ export default function TimetableSetup({ existingTimetable, onSubmit, onSkip, is
       );
       if (hasInvalidHours) {
         Alert.alert('Invalid Hours', 'Please make sure all sessions have consecutive hours.');
+        return;
+      }
+
+      // Check for overlapping hours
+      const overlapCheck = hasOverlappingHours(timetable);
+      if (overlapCheck.hasOverlap) {
+        Alert.alert(
+          'Schedule Conflict',
+          `You cannot have multiple classes at the same time.\n\n${overlapCheck.conflictDetails}\n\nPlease adjust the time slots to avoid conflicts.`
+        );
         return;
       }
 
